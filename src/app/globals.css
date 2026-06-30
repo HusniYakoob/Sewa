@@ -1,52 +1,74 @@
 @import "tailwindcss";
 
+/* Class-based dark mode: toggled from Settings (light is the default). */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* ==========================================================================
    SEWA DESIGN TOKENS — single source of truth for the whole brand.
    App, admin, emails and marketing all read from here.
 
-   HOW TO RE-BRAND LATER:
-   - Change the values in `:root` below. That's it.
-   - The brand is intentionally black & white for now (Uber style).
-     To go colour later, e.g. set `--brand: #10B981` (green) and the whole
-     product recolours — buttons, links, focus rings, everything.
-   - STATUS colours (success / warning / danger / info) are FUNCTIONAL, not
-     brand. They stay coloured even in the B&W phase because users must be able
-     to tell states apart (paid / pending / failed). Pair them with an icon,
-     never colour alone.
+   RE-BRAND LATER: change the values in `:root` (light) and `.dark` (dark).
+   The brand is black & white for now. To go colour later, set `--brand` and
+   the whole product recolours.
+
+   STATUS colours (success / warning / danger / info) are FUNCTIONAL, not brand.
+   They stay coloured so users can tell states apart. Always pair with an icon
+   or label, never colour alone.
    ========================================================================== */
 
 :root {
-  /* --- Brand (the one knob to turn for colour later) --- */
-  --brand: #111111;            /* primary actions, CTAs. Later: brand colour */
+  /* Brand (the one knob for colour later) */
+  --brand: #111111;
   --brand-hover: #000000;
-  --brand-foreground: #ffffff; /* text/icons on top of --brand */
+  --brand-foreground: #ffffff;
 
-  /* --- Neutrals (the black & white scale) --- */
-  --background: #ffffff;       /* app page background */
-  --foreground: #111111;       /* primary text */
-  --surface: #ffffff;          /* cards, sheets, inputs */
-  --surface-muted: #f5f5f5;    /* grouped sections, subtle fills */
-  --muted: #f5f5f5;            /* muted backgrounds */
-  --muted-foreground: #6b7280; /* secondary text, captions */
-  --border: #e5e7eb;           /* hairlines, input borders */
-  --ring: #111111;             /* focus ring */
+  /* Neutrals (black & white scale) */
+  --background: #ffffff;
+  --foreground: #111111;
+  --surface: #ffffff;
+  --surface-muted: #f4f4f5;
+  --muted: #f4f4f5;
+  --muted-foreground: #6b7280;
+  --border: #e5e7eb;
+  --ring: #111111;
 
-  /* --- Functional status (kept coloured on purpose) --- */
+  /* Functional status */
   --success: #10b981;
   --success-foreground: #ffffff;
   --warning: #f59e0b;
   --warning-foreground: #111111;
   --danger: #ef4444;
   --danger-foreground: #ffffff;
-  --info: #00b8f5;
+  --info: #2563eb;
   --info-foreground: #ffffff;
 
-  /* --- Radii --- */
-  --radius: 0.625rem;          /* 10px base */
+  --radius: 0.75rem; /* 12px base */
 }
 
-/* Map raw tokens -> Tailwind theme so utilities like `bg-brand`,
-   `text-muted-foreground`, `rounded-lg`, `border-border` exist everywhere. */
+.dark {
+  --brand: #fafafa;            /* in B&W dark, primary inverts to white */
+  --brand-hover: #ffffff;
+  --brand-foreground: #111111;
+
+  --background: #0b0b0c;
+  --foreground: #fafafa;
+  --surface: #161618;          /* cards sit just above the page */
+  --surface-muted: #202024;
+  --muted: #202024;
+  --muted-foreground: #a1a1aa;
+  --border: #2a2a2e;
+  --ring: #fafafa;
+
+  --success: #34d399;
+  --success-foreground: #052e1f;
+  --warning: #fbbf24;
+  --warning-foreground: #211603;
+  --danger: #f87171;
+  --danger-foreground: #2a0a0a;
+  --info: #60a5fa;
+  --info-foreground: #06173a;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -75,13 +97,24 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-plus-jakarta);
+  --font-mono: var(--font-roboto-mono);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Material Symbols base. Default to the outlined, regular-weight look. */
+.material-symbols-outlined {
+  font-variation-settings:
+    "FILL" 0,
+    "wght" 400,
+    "GRAD" 0,
+    "opsz" 24;
+  line-height: 1;
+  user-select: none;
 }

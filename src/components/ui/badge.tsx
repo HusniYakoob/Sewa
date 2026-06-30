@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
  * so meaning never relies on colour alone (accessibility).
  */
 const badgeVariants = cva(
-  "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium [&_svg]:size-3",
+  "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium [&_.material-symbols-outlined]:text-[0.95rem]",
   {
     variants: {
       variant: {

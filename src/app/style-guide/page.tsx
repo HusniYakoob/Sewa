@@ -1,7 +1,7 @@
-import { BadgeCheck, Search, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Icon } from "@/components/ui/icon";
 import {
   Card,
   CardContent,
@@ -21,8 +21,8 @@ export default function StyleGuidePage() {
         <p className="text-sm font-medium text-muted-foreground">Sewa</p>
         <h1 className="text-3xl font-bold tracking-tight">Design System</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Black &amp; white brand for now. Every colour, radius and font lives in
-          one place (globals.css) and recolours from a single knob later.
+          Black and white brand for now. Every colour, radius and font lives in
+          one place (globals.css) and recolours from a single token later.
         </p>
       </header>
 
@@ -38,9 +38,33 @@ export default function StyleGuidePage() {
           <Swatch name="info" className="bg-info" />
         </div>
         <p className="mt-3 text-xs text-muted-foreground">
-          Neutrals are the brand (B&amp;W). Status colours are functional and stay
-          coloured so states remain readable.
+          Neutrals are the brand. Status colours are functional and stay coloured
+          so states remain readable.
         </p>
+      </Section>
+
+      <Section title="Icons (Material Symbols)">
+        <div className="flex flex-wrap gap-5 text-foreground">
+          {[
+            "search",
+            "home",
+            "person",
+            "verified_user",
+            "calendar_today",
+            "payments",
+            "pin",
+            "star",
+            "notifications",
+            "settings",
+          ].map((n) => (
+            <div key={n} className="flex flex-col items-center gap-1">
+              <Icon name={n} className="text-2xl" />
+              <span className="font-mono text-[10px] text-muted-foreground">
+                {n}
+              </span>
+            </div>
+          ))}
+        </div>
       </Section>
 
       <Section title="Buttons">
@@ -53,7 +77,7 @@ export default function StyleGuidePage() {
           <Button disabled>Disabled</Button>
         </div>
         <Button block className="mt-3">
-          Full-width (mobile primary)
+          Full width (mobile primary)
         </Button>
       </Section>
 
@@ -65,7 +89,7 @@ export default function StyleGuidePage() {
           <Field
             label="Phone number"
             htmlFor="phone"
-            hint="We'll send a verification code."
+            hint="We will send a verification code."
           >
             <Input id="phone" type="tel" placeholder="+94 77 123 4567" />
           </Field>
@@ -78,14 +102,14 @@ export default function StyleGuidePage() {
       <Section title="Badges">
         <div className="flex flex-wrap gap-2">
           <Badge variant="success">
-            <BadgeCheck /> NIC Verified
+            <Icon name="verified" filled /> NIC Verified
           </Badge>
           <Badge variant="warning">Pending</Badge>
           <Badge variant="danger">Failed</Badge>
           <Badge variant="info">In progress</Badge>
           <Badge variant="solid">Pro</Badge>
           <Badge>
-            <Star /> 4.9
+            <Icon name="star" filled /> 4.9
           </Badge>
         </div>
       </Section>
@@ -96,16 +120,20 @@ export default function StyleGuidePage() {
             <div className="flex items-center justify-between">
               <CardTitle>Deep Home Cleaning</CardTitle>
               <Badge variant="success">
-                <BadgeCheck /> Verified
+                <Icon name="verified" filled /> Verified
               </Badge>
             </div>
-            <CardDescription>Kumara P. · Colombo 4 · 4.9 ★ (32)</CardDescription>
+            <CardDescription>
+              Kumara P. · Colombo 4 · 4.9 rating (32)
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
-              <span className="font-mono text-lg font-semibold">LKR 5,000</span>
+              <span className="font-mono text-lg font-semibold tabular-nums">
+                LKR 5,000
+              </span>
               <Button size="sm">
-                <Search /> View
+                <Icon name="visibility" /> View
               </Button>
             </div>
           </CardContent>
