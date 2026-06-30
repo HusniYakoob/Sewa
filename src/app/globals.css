@@ -1,0 +1,87 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   SEWA DESIGN TOKENS — single source of truth for the whole brand.
+   App, admin, emails and marketing all read from here.
+
+   HOW TO RE-BRAND LATER:
+   - Change the values in `:root` below. That's it.
+   - The brand is intentionally black & white for now (Uber style).
+     To go colour later, e.g. set `--brand: #10B981` (green) and the whole
+     product recolours — buttons, links, focus rings, everything.
+   - STATUS colours (success / warning / danger / info) are FUNCTIONAL, not
+     brand. They stay coloured even in the B&W phase because users must be able
+     to tell states apart (paid / pending / failed). Pair them with an icon,
+     never colour alone.
+   ========================================================================== */
+
+:root {
+  /* --- Brand (the one knob to turn for colour later) --- */
+  --brand: #111111;            /* primary actions, CTAs. Later: brand colour */
+  --brand-hover: #000000;
+  --brand-foreground: #ffffff; /* text/icons on top of --brand */
+
+  /* --- Neutrals (the black & white scale) --- */
+  --background: #ffffff;       /* app page background */
+  --foreground: #111111;       /* primary text */
+  --surface: #ffffff;          /* cards, sheets, inputs */
+  --surface-muted: #f5f5f5;    /* grouped sections, subtle fills */
+  --muted: #f5f5f5;            /* muted backgrounds */
+  --muted-foreground: #6b7280; /* secondary text, captions */
+  --border: #e5e7eb;           /* hairlines, input borders */
+  --ring: #111111;             /* focus ring */
+
+  /* --- Functional status (kept coloured on purpose) --- */
+  --success: #10b981;
+  --success-foreground: #ffffff;
+  --warning: #f59e0b;
+  --warning-foreground: #111111;
+  --danger: #ef4444;
+  --danger-foreground: #ffffff;
+  --info: #00b8f5;
+  --info-foreground: #ffffff;
+
+  /* --- Radii --- */
+  --radius: 0.625rem;          /* 10px base */
+}
+
+/* Map raw tokens -> Tailwind theme so utilities like `bg-brand`,
+   `text-muted-foreground`, `rounded-lg`, `border-border` exist everywhere. */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-foreground: var(--brand-foreground);
+
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
