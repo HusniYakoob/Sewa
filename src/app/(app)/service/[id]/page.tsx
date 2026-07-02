@@ -1,9 +1,10 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AppHeader } from "@/components/nav/app-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { formatLKR, computeFees } from "@/lib/pricing";
 
@@ -81,9 +82,9 @@ export default async function ServiceDetailPage({
       </div>
 
       <div className="sticky bottom-20 mx-auto max-w-md px-4">
-        <Button block>
+        <Link href={`/book/${s.id}`} className={buttonVariants({ block: true })}>
           <Icon name="lock" /> Book now
-        </Button>
+        </Link>
         <p className="mt-2 text-center text-xs text-muted-foreground">
           Payment is held securely until the job is done.
         </p>

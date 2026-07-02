@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { AppHeader } from "@/components/nav/app-header";
 import { Card } from "@/components/ui/card";
@@ -54,7 +55,8 @@ export default async function BookingsPage() {
               const s = STATUS_BADGE[b.status];
               return (
                 <li key={b.id}>
-                  <Card>
+                  <Link href={`/booking/${b.id}`}>
+                  <Card className="transition-colors hover:bg-surface-muted">
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="font-semibold">{b.service?.title ?? "Service"}</p>
@@ -71,6 +73,7 @@ export default async function BookingsPage() {
                       {formatLKR(b.total_charged)}
                     </p>
                   </Card>
+                  </Link>
                 </li>
               );
             })}
