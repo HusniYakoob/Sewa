@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 
 export default function Home() {
@@ -14,10 +14,15 @@ export default function Home() {
       </p>
 
       <div className="mt-8 flex flex-col gap-3">
-        <Button block>Get started</Button>
-        <Button variant="secondary" block>
-          Become a provider
-        </Button>
+        <Link href="/signup" className={buttonVariants({ block: true })}>
+          Get started
+        </Link>
+        <Link
+          href="/login"
+          className={buttonVariants({ variant: "secondary", block: true })}
+        >
+          Sign in
+        </Link>
       </div>
 
       <p className="mt-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">

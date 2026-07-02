@@ -75,15 +75,21 @@ create trigger trg_profiles_updated before update on profiles
 -- Create a profile automatically when a new auth user is created.
 create or replace function handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$
+declare
+  v_role user_role := coalesce((new.raw_user_meta_data ->> 'role')::user_role, 'buyer');
 begin
   insert into public.profiles (id, role, full_name, phone, email)
   values (
     new.id,
-    coalesce((new.raw_user_meta_data ->> 'role')::user_role, 'buyer'),
+    v_role,
     coalesce(new.raw_user_meta_data ->> 'full_name', ''),
     new.raw_user_meta_data ->> 'phone',
     new.email
   );
+  -- Sellers get a seller_profiles row automatically so they can list services.
+  if v_role = 'seller' then
+    insert into public.seller_profiles (user_id) values (new.id);
+  end if;
   return new;
 end;
 $$;

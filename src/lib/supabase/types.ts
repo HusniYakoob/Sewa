@@ -278,6 +278,7 @@ export interface Database {
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
+    CompositeTypes: Record<string, never>;
     Enums: {
       user_role: UserRole;
       service_status: ServiceStatus;
