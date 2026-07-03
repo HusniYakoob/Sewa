@@ -9,6 +9,7 @@ export default async function AppLayout({
 }) {
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login");
+  if (profile.role === "admin") redirect("/admin");
 
   return (
     <div className="flex min-h-dvh flex-col">
