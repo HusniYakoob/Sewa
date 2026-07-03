@@ -1,8 +1,10 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AppHeader } from "@/components/nav/app-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { RevealPin } from "./reveal-pin";
 import { SellerJob } from "./seller-job";
@@ -130,12 +132,23 @@ export default async function BookingPage({
             <Badge variant={st.variant}>{st.label}</Badge>
           </div>
           <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
-            <span className="text-sm text-muted-foreground">Paid</span>
+            <span className="text-sm text-muted-foreground">
+              {isPaid ? "Paid" : "Total"}
+            </span>
             <span className="font-mono font-semibold tabular-nums">
               {formatLKR(booking.total_charged)}
             </span>
           </div>
         </Card>
+
+        {booking.status === "pending" ? (
+          <Link
+            href={`/pay/${booking.id}`}
+            className={buttonVariants({ block: true })}
+          >
+            <Icon name="lock" /> Pay now
+          </Link>
+        ) : null}
 
         {isPaid && pins ? (
           <div className="flex flex-col gap-2">
