@@ -1,5 +1,5 @@
 -- Sewa full setup: run once in the Supabase SQL Editor.
--- Migrations 0001-0004 + seed, in order.
+-- Migrations 0001-0006 + seed, in order.
 
 -- ============================================================================
 -- Sewa — initial schema
@@ -577,6 +577,46 @@ create policy "reviewer creates review" on reviews
         and b.status = 'completed'
     )
   );
+
+-- ======================= PHONE UNIQUENESS =======================
+-- ============================================================================
+-- Phone uniqueness (interim, unverified). One account per phone number, with
+-- Sri Lankan normalization so 0771234567, +94771234567 and 771234567 all match.
+-- The real guarantee is phone OTP verification (needs an SMS provider); this is
+-- a guard against accidental/duplicate signups until then.
+-- ============================================================================
+
+create or replace function normalized_phone(p text)
+returns text language sql immutable as $$
+  select right(regexp_replace(coalesce(p, ''), '\D', '', 'g'), 9);
+$$;
+
+create unique index if not exists uniq_profiles_norm_phone
+  on public.profiles (normalized_phone(phone))
+  where phone is not null and length(regexp_replace(phone, '\D', '', 'g')) >= 9;
+
+-- Callable by the signup flow to show a friendly message before inserting.
+create or replace function phone_in_use(p text)
+returns boolean language sql security definer set search_path = public stable as $$
+  select normalized_phone(p) <> '' and exists (
+    select 1 from public.profiles
+    where phone is not null and normalized_phone(phone) = normalized_phone(p)
+  );
+$$;
+grant execute on function phone_in_use(text) to anon, authenticated;
+
+-- ======================= SECURITY HARDENING =======================
+-- ============================================================================
+-- Minor security hardening (from the Supabase advisor after DDL changes).
+-- Pin the phone helper's search_path, and stop trigger-only functions from
+-- being reachable through the REST RPC surface.
+-- ============================================================================
+
+alter function public.normalized_phone(text) set search_path = pg_catalog;
+
+revoke execute on function public.handle_new_user() from anon, authenticated, public;
+revoke execute on function public.on_review_change() from anon, authenticated, public;
+revoke execute on function public.set_updated_at() from anon, authenticated, public;
 
 -- ============================ SEED ============================
 -- Seed categories. Icons are Material Symbol names.

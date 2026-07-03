@@ -53,6 +53,15 @@ export async function signUp(
   }
 
   const supabase = await createClient();
+
+  // One account per phone number (normalized). Friendly check before signup.
+  if (phone) {
+    const { data: inUse } = await supabase.rpc("phone_in_use", { p: phone });
+    if (inUse === true) {
+      return { error: "This phone number is already registered." };
+    }
+  }
+
   const { error } = await supabase.auth.signUp({
     email,
     password,
