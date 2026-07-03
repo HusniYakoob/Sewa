@@ -27,6 +27,9 @@ export default async function AdminLayout({
           <Link href="/admin/nic" className="text-muted-foreground hover:text-foreground">
             NIC
           </Link>
+          <Link href="/admin/refunds" className="text-muted-foreground hover:text-foreground">
+            Refunds
+          </Link>
         </nav>
         <form action={signOut} className="ml-auto">
           <button

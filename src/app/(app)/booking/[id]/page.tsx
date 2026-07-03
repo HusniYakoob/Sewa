@@ -9,7 +9,9 @@ import { Icon } from "@/components/ui/icon";
 import { RevealPin } from "./reveal-pin";
 import { SellerJob } from "./seller-job";
 import { ReviewForm } from "./review-form";
-import { formatLKR } from "@/lib/pricing";
+import { CancelForm } from "./cancel-form";
+import { RefundForm } from "./refund-form";
+import { formatLKR, cancellationFee } from "@/lib/pricing";
 import type { BookingStatus } from "@/lib/supabase/types";
 
 const STATUS: Record<
@@ -97,7 +99,28 @@ export default async function BookingPage({
     .maybeSingle();
   const review = reviewRow as { rating: number; comment: string | null } | null;
 
+  const { data: refundRow } = await supabase
+    .from("refunds")
+    .select("status, amount")
+    .eq("booking_id", id)
+    .maybeSingle();
+  const refund = refundRow as { status: string; amount: number } | null;
+
   const st = STATUS[booking.status];
+  const cancellable = ["pending", "accepted", "arrived"].includes(booking.status);
+  const buyerFee =
+    booking.status === "pending"
+      ? 0
+      : cancellationFee(booking.total_charged, new Date(booking.scheduled_at).getTime(), {
+          arrived: booking.status === "arrived",
+          bySeller: false,
+        });
+  const cancelNote =
+    booking.status === "pending"
+      ? "This booking is not paid yet, so cancelling is free."
+      : buyerFee > 0
+        ? `A cancellation fee of ${formatLKR(buyerFee)} applies. You will be refunded ${formatLKR(booking.total_charged - buyerFee)}.`
+        : "You will be fully refunded.";
   const isPaid = booking.status !== "pending" && booking.status !== "cancelled";
 
   return (
@@ -162,6 +185,23 @@ export default async function BookingPage({
               <RevealPin label="END PIN" pin={pins.end_pin} />
             </div>
           </div>
+        ) : null}
+
+        {cancellable ? (
+          <CancelForm bookingId={booking.id} note={cancelNote} />
+        ) : null}
+
+        {booking.status === "completed" ? (
+          refund ? (
+            <Card className="flex items-center gap-2">
+              <Icon name="receipt_long" className="text-muted-foreground" />
+              <p className="text-sm">
+                Refund {refund.status} · {formatLKR(refund.amount)}
+              </p>
+            </Card>
+          ) : (
+            <RefundForm bookingId={booking.id} />
+          )
         ) : null}
 
         {booking.status === "completed" ? (

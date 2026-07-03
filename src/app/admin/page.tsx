@@ -5,22 +5,27 @@ import { formatLKR } from "@/lib/pricing";
 export default async function AdminDashboard() {
   const supabase = await createClient();
 
-  const [total, completed, paid, pendingPayouts, completedRows] = await Promise.all([
-    supabase.from("bookings").select("id", { count: "exact", head: true }),
-    supabase
-      .from("bookings")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "completed"),
-    supabase
-      .from("payments")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "succeeded"),
-    supabase
-      .from("payouts")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "pending"),
-    supabase.from("bookings").select("platform_net").eq("status", "completed"),
-  ]);
+  const [total, completed, paid, pendingPayouts, pendingRefunds, completedRows] =
+    await Promise.all([
+      supabase.from("bookings").select("id", { count: "exact", head: true }),
+      supabase
+        .from("bookings")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "completed"),
+      supabase
+        .from("payments")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "succeeded"),
+      supabase
+        .from("payouts")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending"),
+      supabase
+        .from("refunds")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending"),
+      supabase.from("bookings").select("platform_net").eq("status", "completed"),
+    ]);
 
   const commission = ((completedRows.data ?? []) as { platform_net: number }[]).reduce(
     (t, b) => t + Number(b.platform_net),
@@ -32,6 +37,7 @@ export default async function AdminDashboard() {
     { label: "Completed", value: String(completed.count ?? 0) },
     { label: "Payments received", value: String(paid.count ?? 0) },
     { label: "Pending payouts", value: String(pendingPayouts.count ?? 0) },
+    { label: "Pending refunds", value: String(pendingRefunds.count ?? 0) },
   ];
 
   return (

@@ -63,6 +63,25 @@ export function computeFees(
   };
 }
 
+/**
+ * Cancellation fee retained on a paid booking. Buyer-initiated fees scale with
+ * lateness; once the seller has arrived the fee is heavy so a "meet then cancel
+ * for cash" costs the same as staying on-platform. A seller-initiated cancel
+ * is free to the buyer (full refund) and penalized separately.
+ */
+export function cancellationFee(
+  totalCharged: number,
+  scheduledAtMs: number,
+  opts: { arrived: boolean; bySeller: boolean },
+): number {
+  if (opts.bySeller) return 0;
+  if (opts.arrived) return round2(totalCharged * 0.5);
+  const hours = (scheduledAtMs - Date.now()) / 3_600_000;
+  if (hours >= 24) return 0;
+  if (hours >= 2) return round2(totalCharged * 0.25);
+  return round2(totalCharged * 0.5);
+}
+
 /** Format an LKR amount for display, e.g. 5000 -> "LKR 5,000.00". */
 export function formatLKR(amount: number): string {
   return `LKR ${amount.toLocaleString("en-LK", {

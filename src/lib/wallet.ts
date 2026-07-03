@@ -36,16 +36,20 @@ export async function getSellerBalance(
   const now = Date.now();
   let held = 0;
   let cleared = 0;
+  let clawedBack = 0;
   for (const e of entries) {
-    if (e.type !== "earning") continue;
     const amt = Number(e.amount);
-    if (e.available_at && new Date(e.available_at).getTime() > now) held += amt;
-    else cleared += amt;
+    if (e.type === "earning") {
+      if (e.available_at && new Date(e.available_at).getTime() > now) held += amt;
+      else cleared += amt;
+    } else if (e.type === "refund_clawback") {
+      clawedBack += amt; // stored as a positive magnitude to subtract
+    }
   }
 
   const reserved = payouts
     .filter((p) => RESERVING.includes(p.status))
     .reduce((t, p) => t + Number(p.amount), 0);
 
-  return { held, available: Math.max(0, cleared - reserved) };
+  return { held, available: Math.max(0, cleared - reserved - clawedBack) };
 }

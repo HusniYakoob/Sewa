@@ -7,6 +7,7 @@ import {
   verifyEndPin,
   type JobState,
 } from "./seller-actions";
+import { CancelForm } from "./cancel-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Icon } from "@/components/ui/icon";
@@ -88,6 +89,13 @@ export function SellerJob({
 
       {status === "cancelled" || status === "declined" ? (
         <Info icon="cancel" text="This booking is closed." />
+      ) : null}
+
+      {status === "accepted" || status === "arrived" ? (
+        <CancelForm
+          bookingId={bookingId}
+          note="If you cancel, the customer is fully refunded and you receive a strike."
+        />
       ) : null}
     </div>
   );

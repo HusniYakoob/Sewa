@@ -127,3 +127,96 @@ export async function rejectNic(formData: FormData) {
   await logAction(ctx.admin, ctx.adminId, "rejected_nic", "nic", userId);
   revalidatePath("/admin/nic");
 }
+
+/** Approve a refund: refund the payment and claw back the seller's earning. */
+export async function approveRefund(formData: FormData) {
+  const ctx = await requireAdmin();
+  if (!ctx) return;
+  const id = String(formData.get("refund_id") ?? "");
+  const { data: rRow } = await ctx.admin
+    .from("refunds")
+    .select("id, amount, payment_id, booking_id, status")
+    .eq("id", id)
+    .maybeSingle();
+  const refund = rRow as {
+    amount: number;
+    payment_id: string;
+    booking_id: string;
+    status: string;
+  } | null;
+  if (!refund || refund.status !== "pending") return;
+
+  const now = new Date().toISOString();
+
+  const { data: pRow } = await ctx.admin
+    .from("payments")
+    .select("amount")
+    .eq("id", refund.payment_id)
+    .maybeSingle();
+  const paymentAmount = Number((pRow as { amount: number } | null)?.amount ?? 0);
+  const fully = Number(refund.amount) >= paymentAmount;
+  await ctx.admin
+    .from("payments")
+    .update({
+      status: fully ? "refunded" : "partially_refunded",
+      escrow_status: "refunded",
+    })
+    .eq("id", refund.payment_id);
+
+  // If the seller was already credited for this job, reverse it.
+  const { data: earning } = await ctx.admin
+    .from("wallet_entries")
+    .select("amount")
+    .eq("booking_id", refund.booking_id)
+    .eq("type", "earning")
+    .maybeSingle();
+  if (earning) {
+    const { data: bk } = await ctx.admin
+      .from("bookings")
+      .select("seller_id")
+      .eq("id", refund.booking_id)
+      .maybeSingle();
+    await ctx.admin.from("wallet_entries").insert({
+      seller_id: (bk as { seller_id: string }).seller_id,
+      booking_id: refund.booking_id,
+      type: "refund_clawback",
+      amount: Number((earning as { amount: number }).amount),
+      status: "available",
+      available_at: now,
+      note: "Refund clawback",
+    });
+  }
+
+  await ctx.admin
+    .from("refunds")
+    .update({
+      status: "completed",
+      approved_by: ctx.adminId,
+      approved_at: now,
+      processed_at: now,
+    })
+    .eq("id", id);
+  await logAction(ctx.admin, ctx.adminId, "approved_refund", "refund", id);
+  revalidatePath("/admin/refunds");
+  revalidatePath("/earnings");
+}
+
+/** Reject a refund request. */
+export async function rejectRefund(formData: FormData) {
+  const ctx = await requireAdmin();
+  if (!ctx) return;
+  const id = String(formData.get("refund_id") ?? "");
+  const reason = String(formData.get("reason") ?? "Rejected");
+  await ctx.admin
+    .from("refunds")
+    .update({
+      status: "rejected",
+      approved_by: ctx.adminId,
+      approved_at: new Date().toISOString(),
+      approval_notes: reason,
+    })
+    .eq("id", id)
+    .eq("status", "pending");
+  await logAction(ctx.admin, ctx.adminId, "rejected_refund", "refund", id);
+  revalidatePath("/admin/refunds");
+}
