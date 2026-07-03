@@ -24,12 +24,13 @@ async function logAction(
   admin: ReturnType<typeof createAdminClient>,
   adminId: string,
   action: string,
+  entityType: string,
   entityId: string,
 ) {
   await admin.from("audit_logs").insert({
     admin_id: adminId,
     action,
-    entity_type: "payout",
+    entity_type: entityType,
     entity_id: entityId,
   });
 }
@@ -48,7 +49,7 @@ export async function approvePayout(formData: FormData) {
     })
     .eq("id", id)
     .eq("status", "pending");
-  await logAction(ctx.admin, ctx.adminId, "approved_payout", id);
+  await logAction(ctx.admin, ctx.adminId, "approved_payout", "payout", id);
   revalidatePath("/admin/payouts");
 }
 
@@ -62,7 +63,7 @@ export async function markPayoutPaid(formData: FormData) {
     .update({ status: "completed", processed_at: new Date().toISOString() })
     .eq("id", id)
     .in("status", ["approved", "processing"]);
-  await logAction(ctx.admin, ctx.adminId, "completed_payout", id);
+  await logAction(ctx.admin, ctx.adminId, "completed_payout", "payout", id);
   revalidatePath("/admin/payouts");
 }
 
@@ -77,6 +78,52 @@ export async function rejectPayout(formData: FormData) {
     .update({ status: "failed", failure_reason: reason })
     .eq("id", id)
     .in("status", ["pending", "approved"]);
-  await logAction(ctx.admin, ctx.adminId, "rejected_payout", id);
+  await logAction(ctx.admin, ctx.adminId, "rejected_payout", "payout", id);
   revalidatePath("/admin/payouts");
+}
+
+/** Approve a NIC submission: marks it verified and flips the seller flag. */
+export async function approveNic(formData: FormData) {
+  const ctx = await requireAdmin();
+  if (!ctx) return;
+  const userId = String(formData.get("user_id") ?? "");
+  const now = new Date().toISOString();
+  await ctx.admin
+    .from("nic_verifications")
+    .update({
+      status: "approved",
+      reviewed_by: ctx.adminId,
+      reviewed_at: now,
+      rejection_reason: null,
+    })
+    .eq("user_id", userId);
+  await ctx.admin
+    .from("seller_profiles")
+    .update({ nic_verified: true, nic_verified_at: now })
+    .eq("user_id", userId);
+  await logAction(ctx.admin, ctx.adminId, "approved_nic", "nic", userId);
+  revalidatePath("/admin/nic");
+}
+
+/** Reject a NIC submission with a reason. */
+export async function rejectNic(formData: FormData) {
+  const ctx = await requireAdmin();
+  if (!ctx) return;
+  const userId = String(formData.get("user_id") ?? "");
+  const reason = String(formData.get("reason") ?? "Not verifiable");
+  await ctx.admin
+    .from("nic_verifications")
+    .update({
+      status: "rejected",
+      reviewed_by: ctx.adminId,
+      reviewed_at: new Date().toISOString(),
+      rejection_reason: reason,
+    })
+    .eq("user_id", userId);
+  await ctx.admin
+    .from("seller_profiles")
+    .update({ nic_verified: false })
+    .eq("user_id", userId);
+  await logAction(ctx.admin, ctx.adminId, "rejected_nic", "nic", userId);
+  revalidatePath("/admin/nic");
 }

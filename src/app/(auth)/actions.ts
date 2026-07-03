@@ -6,6 +6,46 @@ import type { UserRole } from "@/lib/supabase/types";
 
 export interface AuthState {
   error?: string;
+  sent?: boolean;
+}
+
+const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://sewa-two.vercel.app";
+
+/** Send a password reset email that links back to /reset-password. */
+export async function requestPasswordReset(
+  _prev: AuthState,
+  formData: FormData,
+): Promise<AuthState> {
+  const email = String(formData.get("email") ?? "").trim();
+  if (!email) return { error: "Enter your email." };
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${SITE}/auth/callback?next=/reset-password`,
+  });
+  if (error) return { error: error.message };
+  return { sent: true };
+}
+
+/** Set a new password (called with an active recovery session). */
+export async function updatePassword(
+  _prev: AuthState,
+  formData: FormData,
+): Promise<AuthState> {
+  const password = String(formData.get("password") ?? "");
+  if (password.length < 8) {
+    return { error: "Password must be at least 8 characters." };
+  }
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: "Reset link expired. Request a new one." };
+  }
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) return { error: error.message };
+  redirect("/home");
 }
 
 /** Sign in with email + password, then send the user to their area. */

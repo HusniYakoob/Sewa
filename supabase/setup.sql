@@ -1,6 +1,7 @@
 -- Sewa full setup: run once in the Supabase SQL Editor.
--- Migrations 0001-0006 + seed, in order.
+-- Migrations 0001-0007 + seed, in order.
 
+-- ==================== 0001_initial_schema ====================
 -- ============================================================================
 -- Sewa — initial schema
 -- Service marketplace for Sri Lanka. Encodes the locked business decisions:
@@ -390,7 +391,7 @@ create table audit_logs (
 );
 create index idx_audit_admin on audit_logs(admin_id);
 
--- ============================ RLS ============================
+-- ==================== 0002_rls_policies ====================
 -- ============================================================================
 -- Row Level Security
 -- Money-critical writes (payment capture, escrow release, wallet entries,
@@ -506,7 +507,7 @@ create policy "admin reads payment logs" on payment_logs
 create policy "admin reads audit logs" on audit_logs
   for select using (is_admin());
 
--- ==================== BOOKING PINS (reveal) ====================
+-- ==================== 0003_booking_pins_reveal ====================
 -- ============================================================================
 -- booking_pins: store the START/END PINs so the BUYER can reveal them and read
 -- them out to the provider (Uber style). PINs are low-value, single-use, and
@@ -531,7 +532,7 @@ create policy "buyer reads own booking pins" on booking_pins
     )
   );
 
--- ============================ REVIEWS ============================
+-- ==================== 0004_reviews ====================
 -- ============================================================================
 -- Reviews: keep seller and service ratings in sync automatically, and harden
 -- who may post a review (only the booking's buyer, only after completion).
@@ -578,7 +579,7 @@ create policy "reviewer creates review" on reviews
     )
   );
 
--- ======================= PHONE UNIQUENESS =======================
+-- ==================== 0005_phone_uniqueness ====================
 -- ============================================================================
 -- Phone uniqueness (interim, unverified). One account per phone number, with
 -- Sri Lankan normalization so 0771234567, +94771234567 and 771234567 all match.
@@ -605,7 +606,7 @@ returns boolean language sql security definer set search_path = public stable as
 $$;
 grant execute on function phone_in_use(text) to anon, authenticated;
 
--- ======================= SECURITY HARDENING =======================
+-- ==================== 0006_security_hardening ====================
 -- ============================================================================
 -- Minor security hardening (from the Supabase advisor after DDL changes).
 -- Pin the phone helper's search_path, and stop trigger-only functions from
@@ -617,6 +618,35 @@ alter function public.normalized_phone(text) set search_path = pg_catalog;
 revoke execute on function public.handle_new_user() from anon, authenticated, public;
 revoke execute on function public.on_review_change() from anon, authenticated, public;
 revoke execute on function public.set_updated_at() from anon, authenticated, public;
+
+-- ==================== 0007_nic_storage ====================
+-- ============================================================================
+-- NIC verification storage: a selfie column and a private bucket for NIC docs
+-- and selfies. Files live under a per-user folder ({user_id}/...); only the
+-- owner or an admin may read them.
+-- ============================================================================
+
+alter table public.nic_verifications add column if not exists selfie_url text;
+
+insert into storage.buckets (id, name, public)
+values ('nic-documents', 'nic-documents', false)
+on conflict (id) do nothing;
+
+drop policy if exists "nic upload own" on storage.objects;
+create policy "nic upload own" on storage.objects
+  for insert to authenticated
+  with check (
+    bucket_id = 'nic-documents'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+drop policy if exists "nic read own or admin" on storage.objects;
+create policy "nic read own or admin" on storage.objects
+  for select to authenticated
+  using (
+    bucket_id = 'nic-documents'
+    and ((storage.foldername(name))[1] = auth.uid()::text or public.is_admin())
+  );
 
 -- ============================ SEED ============================
 -- Seed categories. Icons are Material Symbol names.

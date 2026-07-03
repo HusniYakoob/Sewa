@@ -69,6 +69,9 @@ export async function requestPayout(
   if ("error" in res && res.error) return { error: res.error };
   const { supabase, seller } = res as { supabase: Awaited<ReturnType<typeof createClient>>; seller: Record<string, unknown> };
 
+  if (!seller.nic_verified) {
+    return { error: "Verify your NIC before requesting a payout." };
+  }
   if (!seller.bank_account_number) {
     return { error: "Add your bank details first." };
   }

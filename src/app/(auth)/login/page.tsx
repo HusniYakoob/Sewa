@@ -30,6 +30,12 @@ export default function LoginPage() {
             required
           />
         </Field>
+        <Link
+          href="/forgot-password"
+          className="-mt-2 self-end text-sm text-muted-foreground underline underline-offset-4"
+        >
+          Forgot password?
+        </Link>
 
         {state.error ? (
           <p className="flex items-center gap-1.5 text-sm text-danger">

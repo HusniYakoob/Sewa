@@ -50,6 +50,18 @@ export default async function EarningsPage() {
     <div>
       <AppHeader title="Earnings" />
       <div className="flex flex-col gap-4 p-4">
+        {!seller?.nic_verified ? (
+          <Link
+            href="/verify-nic"
+            className="flex items-center justify-between rounded-lg border border-warning/40 bg-warning/10 px-4 py-3 text-sm"
+          >
+            <span className="flex items-center gap-2 font-medium">
+              <Icon name="badge" className="text-warning" /> Verify your NIC to
+              get paid
+            </span>
+            <Icon name="chevron_right" className="text-muted-foreground" />
+          </Link>
+        ) : null}
         <Card>
           <p className="text-sm text-muted-foreground">Available to withdraw</p>
           <p className="mt-1 font-mono text-3xl font-bold tabular-nums">
