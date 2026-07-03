@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Icon } from "@/components/ui/icon";
 import { RevealPin } from "./reveal-pin";
+import { SellerJob } from "./seller-job";
 import { formatLKR } from "@/lib/pricing";
 import type { BookingStatus } from "@/lib/supabase/types";
 
@@ -22,7 +23,7 @@ const STATUS: Record<
   disputed: { variant: "danger", label: "Disputed" },
 };
 
-export default async function BookingConfirmationPage({
+export default async function BookingPage({
   params,
   searchParams,
 }: {
@@ -32,11 +33,14 @@ export default async function BookingConfirmationPage({
   const { id } = await params;
   const { paid, cancelled } = await searchParams;
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const { data } = await supabase
     .from("bookings")
     .select(
-      "id, status, total_charged, scheduled_at, location, service:services(title)",
+      "id, status, total_charged, seller_net, scheduled_at, location, notes, buyer_id, service:services(title)",
     )
     .eq("id", id)
     .maybeSingle();
@@ -45,13 +49,35 @@ export default async function BookingConfirmationPage({
     id: string;
     status: BookingStatus;
     total_charged: number;
+    seller_net: number;
     scheduled_at: string;
     location: string | null;
+    notes: string | null;
+    buyer_id: string;
     service: { title: string } | null;
   } | null;
 
   if (!booking) notFound();
 
+  // Seller view: job progression + PIN entry.
+  if (booking.buyer_id !== user?.id) {
+    return (
+      <div>
+        <AppHeader title="Job" backHref="/bookings" />
+        <SellerJob
+          bookingId={booking.id}
+          status={booking.status}
+          title={booking.service?.title ?? "Service"}
+          scheduledAt={booking.scheduled_at}
+          location={booking.location}
+          notes={booking.notes}
+          sellerNet={Number(booking.seller_net)}
+        />
+      </div>
+    );
+  }
+
+  // Buyer view: confirmation + revealable PINs.
   const { data: pinRow } = await supabase
     .from("booking_pins")
     .select("start_pin, end_pin")
