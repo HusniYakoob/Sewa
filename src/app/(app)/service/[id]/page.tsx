@@ -81,7 +81,7 @@ export default async function ServiceDetailPage({
         </Card>
       </div>
 
-      <div className="sticky bottom-20 mx-auto max-w-md px-4">
+      <div className="px-4 pb-6">
         <Link href={`/book/${s.id}`} className={buttonVariants({ block: true })}>
           <Icon name="lock" /> Book now
         </Link>
