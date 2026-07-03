@@ -1,8 +1,14 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { getCurrentProfile } from "@/lib/auth";
 import { buttonVariants } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 
-export default function Home() {
+export default async function Home() {
+  // Logged-in users skip the marketing page.
+  const profile = await getCurrentProfile();
+  if (profile) redirect(profile.role === "admin" ? "/admin" : "/home");
+
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-6 py-16">
       <h1 className="text-4xl font-bold leading-tight tracking-tight">
@@ -29,15 +35,6 @@ export default function Home() {
         <Icon name="verified_user" className="text-lg" />
         Every provider is NIC verified
       </p>
-
-      <div className="mt-10 flex items-center justify-center gap-4 text-xs text-muted-foreground">
-        <Link href="/style-guide" className="underline underline-offset-4">
-          Design system
-        </Link>
-        <Link href="/settings" className="underline underline-offset-4">
-          Settings
-        </Link>
-      </div>
     </main>
   );
 }

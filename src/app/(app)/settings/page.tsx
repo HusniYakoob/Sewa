@@ -1,23 +1,12 @@
-import Link from "next/link";
-import { Icon } from "@/components/ui/icon";
+import { AppHeader } from "@/components/nav/app-header";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Card, CardContent } from "@/components/ui/card";
 
 export default function SettingsPage() {
   return (
-    <main className="mx-auto w-full max-w-md px-4 py-6">
-      <header className="mb-6 flex items-center gap-3">
-        <Link
-          href="/"
-          aria-label="Back"
-          className="inline-flex h-10 w-10 items-center justify-center rounded-lg hover:bg-surface-muted"
-        >
-          <Icon name="arrow_back" />
-        </Link>
-        <h1 className="text-xl font-semibold">Settings</h1>
-      </header>
-
-      <section className="mb-3">
+    <div>
+      <AppHeader title="Settings" backHref="/profile" />
+      <div className="p-4">
         <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Appearance
         </h2>
@@ -32,7 +21,7 @@ export default function SettingsPage() {
             <ThemeToggle />
           </CardContent>
         </Card>
-      </section>
-    </main>
+      </div>
+    </div>
   );
 }
