@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Icon } from "@/components/ui/icon";
 import { RevealPin } from "./reveal-pin";
 import { SellerJob } from "./seller-job";
+import { ReviewForm } from "./review-form";
 import { formatLKR } from "@/lib/pricing";
 import type { BookingStatus } from "@/lib/supabase/types";
 
@@ -40,7 +41,7 @@ export default async function BookingPage({
   const { data } = await supabase
     .from("bookings")
     .select(
-      "id, status, total_charged, seller_net, scheduled_at, location, notes, buyer_id, service:services(title)",
+      "id, status, total_charged, seller_net, scheduled_at, location, notes, buyer_id, seller_id, service_id, service:services(title)",
     )
     .eq("id", id)
     .maybeSingle();
@@ -54,6 +55,8 @@ export default async function BookingPage({
     location: string | null;
     notes: string | null;
     buyer_id: string;
+    seller_id: string;
+    service_id: string;
     service: { title: string } | null;
   } | null;
 
@@ -84,6 +87,13 @@ export default async function BookingPage({
     .eq("booking_id", id)
     .maybeSingle();
   const pins = pinRow as { start_pin: string; end_pin: string } | null;
+
+  const { data: reviewRow } = await supabase
+    .from("reviews")
+    .select("rating, comment")
+    .eq("booking_id", id)
+    .maybeSingle();
+  const review = reviewRow as { rating: number; comment: string | null } | null;
 
   const st = STATUS[booking.status];
   const isPaid = booking.status !== "pending" && booking.status !== "cancelled";
@@ -139,6 +149,33 @@ export default async function BookingPage({
               <RevealPin label="END PIN" pin={pins.end_pin} />
             </div>
           </div>
+        ) : null}
+
+        {booking.status === "completed" ? (
+          review ? (
+            <Card>
+              <p className="text-sm font-semibold">Your review</p>
+              <div className="mt-1 flex gap-0.5">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <Icon
+                    key={n}
+                    name="star"
+                    filled={n <= review.rating}
+                    className={n <= review.rating ? "text-warning" : "text-muted-foreground"}
+                  />
+                ))}
+              </div>
+              {review.comment ? (
+                <p className="mt-2 text-sm text-muted-foreground">{review.comment}</p>
+              ) : null}
+            </Card>
+          ) : (
+            <ReviewForm
+              bookingId={booking.id}
+              sellerId={booking.seller_id}
+              serviceId={booking.service_id}
+            />
+          )
         ) : null}
       </div>
     </div>
