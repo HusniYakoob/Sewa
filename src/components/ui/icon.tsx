@@ -2,7 +2,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * Icon — Google Material Symbols (outlined). Use this everywhere; no emojis.
+ * Icon — Google Material Symbols (rounded). Use this everywhere; no emojis.
  * `name` is the Material Symbol id, e.g. "search", "verified", "dark_mode".
  * Browse names at https://fonts.google.com/icons.
  *
@@ -26,7 +26,7 @@ export function Icon({
 }: IconProps) {
   return (
     <span
-      className={cn("material-symbols-outlined text-xl", className)}
+      className={cn("material-symbols-rounded text-xl", className)}
       style={
         filled
           ? { fontVariationSettings: '"FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24', ...style }

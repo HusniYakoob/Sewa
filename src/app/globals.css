@@ -5,59 +5,68 @@
 
 /* ==========================================================================
    SEWA DESIGN TOKENS — single source of truth for the whole brand.
-   App, admin, emails and marketing all read from here.
+   Based on the Claude Design handoff: purple #834DFB on lavender, Schibsted
+   Grotesk, rounded bold cards. App, admin, emails and marketing read from here.
 
-   RE-BRAND LATER: change the values in `:root` (light) and `.dark` (dark).
-   The brand is black & white for now. To go colour later, set `--brand` and
-   the whole product recolours.
+   RE-BRAND: change the values in `:root` (light) and `.dark` (dark).
+   --brand recolours every primary action across the product.
 
    STATUS colours (success / warning / danger / info) are FUNCTIONAL, not brand.
-   They stay coloured so users can tell states apart. Always pair with an icon
-   or label, never colour alone.
    ========================================================================== */
 
 :root {
-  /* Brand (the one knob for colour later) */
-  --brand: #111111;
-  --brand-hover: #000000;
+  /* Brand */
+  --brand: #834dfb;
+  --brand-hover: #6b2fe0;
   --brand-foreground: #ffffff;
+  --brand-text: #6b2fe0; /* purple text/links/icons on light surfaces */
+  --brand-tint: #ede7fe; /* soft purple fill for icon chips */
 
-  /* Neutrals (black & white scale) */
-  --background: #ffffff;
-  --foreground: #111111;
+  /* Accent (Sewa yellow) */
+  --accent: #f0e100;
+  --accent-foreground: #1b1c2b;
+
+  /* Neutrals */
+  --background: #f5f3ff;
+  --foreground: #1b1c2b;
   --surface: #ffffff;
-  --surface-muted: #f4f4f5;
-  --muted: #f4f4f5;
-  --muted-foreground: #6b7280;
-  --border: #e5e7eb;
-  --ring: #111111;
+  --surface-muted: #ede7fe;
+  --muted: #f0ecfa;
+  --muted-foreground: #6e6a7c;
+  --border: #ece9f5;
+  --ring: #834dfb;
 
   /* Functional status */
-  --success: #10b981;
+  --success: #2fbf71;
   --success-foreground: #ffffff;
-  --warning: #f59e0b;
-  --warning-foreground: #111111;
-  --danger: #ef4444;
+  --warning: #e0a400;
+  --warning-foreground: #1b1c2b;
+  --danger: #ef4d5b;
   --danger-foreground: #ffffff;
-  --info: #2563eb;
+  --info: #834dfb;
   --info-foreground: #ffffff;
 
-  --radius: 0.75rem; /* 12px base */
+  --radius: 1rem; /* 16px base */
 }
 
 .dark {
-  --brand: #fafafa;            /* in B&W dark, primary inverts to white */
-  --brand-hover: #ffffff;
-  --brand-foreground: #111111;
+  --brand: #834dfb;
+  --brand-hover: #7a42f0;
+  --brand-foreground: #ffffff;
+  --brand-text: #b69bff; /* lighter purple for text/icons on dark surfaces */
+  --brand-tint: #302a47;
 
-  --background: #0b0b0c;
-  --foreground: #fafafa;
-  --surface: #161618;          /* cards sit just above the page */
-  --surface-muted: #202024;
-  --muted: #202024;
-  --muted-foreground: #a1a1aa;
-  --border: #2a2a2e;
-  --ring: #fafafa;
+  --accent: #f0e100;
+  --accent-foreground: #1b1c2b;
+
+  --background: #1b1c2b;
+  --foreground: #f5f3ff;
+  --surface: #26273a;
+  --surface-muted: #302a47;
+  --muted: #302a47;
+  --muted-foreground: #9a96ab;
+  --border: #34354b;
+  --ring: #b69bff;
 
   --success: #34d399;
   --success-foreground: #052e1f;
@@ -65,8 +74,8 @@
   --warning-foreground: #211603;
   --danger: #f87171;
   --danger-foreground: #2a0a0a;
-  --info: #60a5fa;
-  --info-foreground: #06173a;
+  --info: #b69bff;
+  --info-foreground: #1b1c2b;
 }
 
 @theme inline {
@@ -82,6 +91,10 @@
   --color-brand: var(--brand);
   --color-brand-hover: var(--brand-hover);
   --color-brand-foreground: var(--brand-foreground);
+  --color-brand-text: var(--brand-text);
+  --color-brand-tint: var(--brand-tint);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
 
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
@@ -92,13 +105,14 @@
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
 
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-sm: calc(var(--radius) - 6px); /* 10 */
+  --radius-md: calc(var(--radius) - 2px); /* 14 */
+  --radius-lg: var(--radius); /* 16 */
+  --radius-xl: calc(var(--radius) + 4px); /* 20 */
+  --radius-2xl: calc(var(--radius) + 8px); /* 24 */
 
-  --font-sans: var(--font-plus-jakarta);
-  --font-mono: var(--font-roboto-mono);
+  --font-sans: var(--font-schibsted);
+  --font-mono: var(--font-schibsted);
 }
 
 body {
@@ -108,8 +122,8 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Material Symbols base. Default to the outlined, regular-weight look. */
-.material-symbols-outlined {
+/* Material Symbols Rounded to match the design handoff. */
+.material-symbols-rounded {
   font-variation-settings:
     "FILL" 0,
     "wght" 400,

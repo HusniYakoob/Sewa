@@ -1,21 +1,14 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Roboto_Mono } from "next/font/google";
-import "material-symbols/outlined.css";
+import { Schibsted_Grotesk } from "next/font/google";
+import "material-symbols/rounded.css";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 
-// Plus Jakarta Sans stands in for Google Sans (not publicly licensable).
-// To use real Google Sans later, swap this for next/font/local with the files
-// and keep the --font-plus-jakarta variable name, or update the token in CSS.
-const sans = Plus_Jakarta_Sans({
-  variable: "--font-plus-jakarta",
+// Brand typeface from the Claude Design handoff.
+const sans = Schibsted_Grotesk({
+  variable: "--font-schibsted",
   subsets: ["latin"],
-  display: "swap",
-});
-
-const mono = Roboto_Mono({
-  variable: "--font-roboto-mono",
-  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
   display: "swap",
 });
 
@@ -34,7 +27,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${sans.variable} ${mono.variable} h-full antialiased`}
+      className={`${sans.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <ThemeProvider>{children}</ThemeProvider>

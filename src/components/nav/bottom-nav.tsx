@@ -38,8 +38,8 @@ export function BottomNav({ role }: { role: UserRole }) {
                 href={tab.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex h-16 flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors",
-                  active ? "text-foreground" : "text-muted-foreground",
+                  "flex h-16 flex-col items-center justify-center gap-0.5 text-[11px] font-bold transition-colors",
+                  active ? "text-brand-text" : "text-muted-foreground",
                 )}
               >
                 <Icon name={tab.icon} filled={active} className="text-2xl" />

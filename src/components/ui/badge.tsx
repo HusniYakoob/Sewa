@@ -8,16 +8,17 @@ import { cn } from "@/lib/utils";
  * so meaning never relies on colour alone (accessibility).
  */
 const badgeVariants = cva(
-  "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium [&_.material-symbols-outlined]:text-[0.95rem]",
+  "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold [&_.material-symbols-rounded]:text-[0.95rem]",
   {
     variants: {
       variant: {
         neutral: "bg-surface-muted text-muted-foreground",
         solid: "bg-brand text-brand-foreground",
-        success: "bg-success/12 text-success",
+        brand: "bg-brand-tint text-brand-text",
+        success: "bg-success/15 text-success",
         warning: "bg-warning/15 text-warning",
-        danger: "bg-danger/12 text-danger",
-        info: "bg-info/12 text-info",
+        danger: "bg-danger/15 text-danger",
+        info: "bg-brand-tint text-brand-text",
       },
     },
     defaultVariants: {

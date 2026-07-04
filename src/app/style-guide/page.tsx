@@ -21,8 +21,9 @@ export default function StyleGuidePage() {
         <p className="text-sm font-medium text-muted-foreground">Sewa</p>
         <h1 className="text-3xl font-bold tracking-tight">Design System</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Black and white brand for now. Every colour, radius and font lives in
-          one place (globals.css) and recolours from a single token later.
+          Purple on lavender, Schibsted Grotesk, rounded. Every colour, radius
+          and font lives in one place (globals.css) and recolours from a single
+          token.
         </p>
       </header>
 
