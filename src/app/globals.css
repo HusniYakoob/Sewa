@@ -122,6 +122,14 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Signature purple gradient (hero headers, balance cards). */
+.bg-brand-gradient {
+  background: linear-gradient(135deg, #834dfb, #6b2fe0);
+}
+.dark .bg-brand-gradient {
+  background: linear-gradient(135deg, #834dfb, #5b27c9);
+}
+
 /* Material Symbols Rounded to match the design handoff. */
 .material-symbols-rounded {
   font-variation-settings:
