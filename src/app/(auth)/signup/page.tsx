@@ -26,7 +26,11 @@ const roles = [
 
 export default function SignupPage() {
   const [role, setRole] = useState<"buyer" | "seller">("buyer");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [state, action, pending] = useActionState<AuthState, FormData>(signUp, {});
+
+  const mismatch = confirmPassword.length > 0 && password !== confirmPassword;
 
   return (
     <div>
@@ -80,6 +84,9 @@ export default function SignupPage() {
               );
             })}
           </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Don&apos;t worry, you can change this later.
+          </p>
         </div>
 
         <Field label="Full name" htmlFor="full_name">
@@ -111,6 +118,7 @@ export default function SignupPage() {
             type="tel"
             autoComplete="tel"
             placeholder="+94 77 123 4567"
+            required
           />
         </Field>
         <Field label="Password" htmlFor="password" hint="At least 8 characters.">
@@ -121,7 +129,28 @@ export default function SignupPage() {
             type="password"
             autoComplete="new-password"
             placeholder="••••••••"
+            minLength={8}
             required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </Field>
+        <Field
+          label="Repeat password"
+          htmlFor="confirm_password"
+          error={mismatch ? "Passwords do not match." : undefined}
+        >
+          <IconInput
+            icon="lock"
+            id="confirm_password"
+            name="confirm_password"
+            type="password"
+            autoComplete="new-password"
+            placeholder="••••••••"
+            minLength={8}
+            required
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
           />
         </Field>
 
@@ -132,7 +161,7 @@ export default function SignupPage() {
           </p>
         ) : null}
 
-        <Button type="submit" size="lg" block disabled={pending}>
+        <Button type="submit" size="lg" block disabled={pending || mismatch}>
           {pending ? "Creating account" : "Create account"}
         </Button>
       </form>

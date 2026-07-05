@@ -80,13 +80,17 @@ export async function signUp(
   const email = String(formData.get("email") ?? "").trim();
   const phone = String(formData.get("phone") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const confirmPassword = String(formData.get("confirm_password") ?? "");
   const role = String(formData.get("role") ?? "buyer") as UserRole;
 
-  if (!fullName || !email || !password) {
-    return { error: "Name, email and password are required." };
+  if (!fullName || !email || !phone || !password) {
+    return { error: "Name, email, phone and password are required." };
   }
   if (password.length < 8) {
     return { error: "Password must be at least 8 characters." };
+  }
+  if (password !== confirmPassword) {
+    return { error: "Passwords do not match." };
   }
   if (role !== "buyer" && role !== "seller") {
     return { error: "Choose an account type." };

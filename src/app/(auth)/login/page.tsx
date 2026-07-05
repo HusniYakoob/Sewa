@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import Link from "next/link";
-import { signIn, signInWithGoogle, sendEmailCode, type AuthState } from "../actions";
+import { signIn, signInWithGoogle, type AuthState } from "../actions";
 import { Button } from "@/components/ui/button";
 import { Field, IconInput } from "@/components/ui/input";
 import { Icon } from "@/components/ui/icon";
@@ -10,10 +10,6 @@ import { GoogleButton, AuthDivider } from "../parts";
 
 export default function LoginPage() {
   const [state, action, pending] = useActionState<AuthState, FormData>(signIn, {});
-  const [codeState, codeAction, codePending] = useActionState<AuthState, FormData>(
-    sendEmailCode,
-    {},
-  );
 
   return (
     <div>
@@ -70,17 +66,6 @@ export default function LoginPage() {
         </Button>
       </form>
 
-      <form action={codeAction} className="mt-3">
-        <input type="hidden" name="email" value="" />
-        <EmailCodeButton pending={codePending} />
-        {codeState.error ? (
-          <p className="mt-2 flex items-center gap-1.5 text-sm text-danger">
-            <Icon name="error" className="text-base" />
-            {codeState.error}
-          </p>
-        ) : null}
-      </form>
-
       <p className="mt-6 text-center text-sm text-muted-foreground">
         New to Sewa?{" "}
         <Link href="/signup" className="font-bold text-brand-text underline-offset-4 hover:underline">
@@ -88,31 +73,5 @@ export default function LoginPage() {
         </Link>
       </p>
     </div>
-  );
-}
-
-/**
- * "Email me a code" — copies the email from the sign-in field into this
- * form's hidden input on submit so the user doesn't retype it.
- */
-function EmailCodeButton({ pending }: { pending: boolean }) {
-  return (
-    <Button
-      type="submit"
-      variant="secondary"
-      size="lg"
-      block
-      disabled={pending}
-      onClick={(e) => {
-        const emailInput = document.getElementById("email") as HTMLInputElement | null;
-        const hidden = e.currentTarget.form?.querySelector<HTMLInputElement>(
-          'input[name="email"]',
-        );
-        if (hidden) hidden.value = emailInput?.value ?? "";
-      }}
-    >
-      <Icon name="pin" />
-      {pending ? "Sending code" : "Email me a code instead"}
-    </Button>
   );
 }
