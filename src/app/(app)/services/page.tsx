@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { EmptyState } from "@/components/ui/empty-state";
-import { formatLKR } from "@/lib/pricing";
+import { formatLKR, serviceLimitFor } from "@/lib/pricing";
 import type { ServiceStatus } from "@/lib/supabase/types";
 
 type Row = {
@@ -34,14 +34,32 @@ export default async function ServicesPage() {
     .order("created_at", { ascending: false });
 
   const services = (data ?? []) as unknown as Row[];
+  const limit = serviceLimitFor(seller?.is_pro ?? false);
+  const atLimit = services.length >= limit;
 
   return (
     <div>
       <AppHeader
         title="My services"
-        action={{ href: "/services/new", icon: "add", label: "Add service" }}
+        action={atLimit ? undefined : { href: "/services/new", icon: "add", label: "Add service" }}
       />
       <div className="p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <p className="text-xs font-bold text-muted-foreground">
+            {services.length} of {limit} services used
+            {seller?.is_pro ? (
+              <span className="ml-1.5 rounded-full bg-brand-tint px-1.5 py-0.5 text-brand-text">
+                Pro
+              </span>
+            ) : null}
+          </p>
+          {atLimit && !seller?.is_pro ? (
+            <span className="text-xs font-bold text-brand-text">
+              Go Pro for up to 10
+            </span>
+          ) : null}
+        </div>
+
         {services.length === 0 ? (
           <EmptyState
             icon="handyman"

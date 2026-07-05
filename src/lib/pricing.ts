@@ -17,6 +17,14 @@ export const GUARANTEE_RESERVE_RATE = 0.02;
 /** Hold window before completed earnings become withdrawable (hours). */
 export const HOLD_WINDOW_HOURS = 72;
 
+/** Active service listings a seller may have: 3 on the free plan, 10 on Pro. */
+export const FREE_SERVICE_LIMIT = 3;
+export const PRO_SERVICE_LIMIT = 10;
+
+export function serviceLimitFor(isPro: boolean): number {
+  return isPro ? PRO_SERVICE_LIMIT : FREE_SERVICE_LIMIT;
+}
+
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }

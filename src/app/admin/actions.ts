@@ -201,6 +201,23 @@ export async function approveRefund(formData: FormData) {
   revalidatePath("/earnings");
 }
 
+/** Flip a seller's Pro status (raises their listing limit from 3 to 10). */
+export async function toggleSellerPro(formData: FormData) {
+  const ctx = await requireAdmin();
+  if (!ctx) return;
+  const sellerId = String(formData.get("seller_id") ?? "");
+  const nextIsPro = formData.get("is_pro") === "true";
+  await ctx.admin.from("seller_profiles").update({ is_pro: nextIsPro }).eq("id", sellerId);
+  await logAction(
+    ctx.admin,
+    ctx.adminId,
+    nextIsPro ? "granted_pro" : "revoked_pro",
+    "seller_profile",
+    sellerId,
+  );
+  revalidatePath("/admin/sellers");
+}
+
 /** Reject a refund request. */
 export async function rejectRefund(formData: FormData) {
   const ctx = await requireAdmin();

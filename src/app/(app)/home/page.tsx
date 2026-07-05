@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { getCurrentProfile } from "@/lib/auth";
+import { getCurrentProfile, getCurrentSellerProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Icon } from "@/components/ui/icon";
+import { Avatar } from "@/components/ui/avatar";
 import { formatLKR } from "@/lib/pricing";
 import type { BookingStatus } from "@/lib/supabase/types";
 
@@ -10,14 +11,16 @@ export default async function HomePage() {
   const supabase = await createClient();
   const isSeller = profile?.role === "seller";
   const firstName = profile?.full_name?.split(" ")[0] || "there";
-  const initials = (profile?.full_name || "S")
-    .split(" ")
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
 
-  if (isSeller) return <SellerHome firstName={firstName} initials={initials} />;
+  if (isSeller) {
+    return (
+      <SellerHome
+        firstName={firstName}
+        name={profile?.full_name ?? null}
+        avatarUrl={profile?.avatar_url ?? null}
+      />
+    );
+  }
 
   const { data: catData } = await supabase
     .from("categories")
@@ -86,9 +89,14 @@ export default async function HomePage() {
             <span className="flex items-center gap-1.5 rounded-full border border-white/30 bg-white/15 py-2 pl-2.5 pr-3 text-[13px] font-bold">
               <Icon name="location_on" filled className="text-base" /> Nugegoda
             </span>
-            <span className="flex h-[38px] w-[38px] items-center justify-center rounded-full bg-white text-[13px] font-extrabold text-brand">
-              {initials}
-            </span>
+            <Link href="/profile">
+              <Avatar
+                avatarUrl={profile?.avatar_url}
+                name={profile?.full_name}
+                size="sm"
+                className="h-[38px] w-[38px] bg-white text-[13px] text-brand"
+              />
+            </Link>
           </div>
           <h1 className="mt-5 text-[30px] font-extrabold leading-[1.08] tracking-tight">
             Let&rsquo;s get it done,
@@ -226,13 +234,19 @@ export default async function HomePage() {
   );
 }
 
-function SellerHome({
+async function SellerHome({
   firstName,
-  initials,
+  name,
+  avatarUrl,
 }: {
   firstName: string;
-  initials: string;
+  name: string | null;
+  avatarUrl: string | null;
 }) {
+  const seller = await getCurrentSellerProfile();
+  const profileIncomplete =
+    !seller?.description?.trim() || (seller?.service_areas?.length ?? 0) === 0;
+
   const links = [
     { href: "/services", icon: "handyman", label: "My services" },
     { href: "/bookings", icon: "event", label: "Job requests" },
@@ -245,10 +259,17 @@ function SellerHome({
         <div className="absolute -right-12 top-2 h-44 w-44 rounded-full bg-white/[.09]" />
         <div className="relative px-[22px] pt-4">
           <div className="flex items-center justify-between">
-            <span className="text-[13px] font-bold text-white/90">Sewa Pro</span>
-            <span className="flex h-[38px] w-[38px] items-center justify-center rounded-full bg-white text-[13px] font-extrabold text-brand">
-              {initials}
+            <span className="text-[13px] font-bold text-white/90">
+              {seller?.is_pro ? "Sewa Pro" : "Seller"}
             </span>
+            <Link href="/profile">
+              <Avatar
+                avatarUrl={avatarUrl}
+                name={name}
+                size="sm"
+                className="h-[38px] w-[38px] bg-white text-[13px] text-brand"
+              />
+            </Link>
           </div>
           <h1 className="mt-5 text-[30px] font-extrabold leading-[1.08] tracking-tight">
             Ready to earn,
@@ -257,6 +278,27 @@ function SellerHome({
           </h1>
         </div>
       </div>
+
+      {profileIncomplete ? (
+        <div className="px-[22px] pt-4">
+          <Link
+            href="/seller-profile"
+            className="flex items-center gap-3 rounded-2xl bg-brand-tint p-3.5"
+          >
+            <span className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-surface">
+              <Icon name="edit_note" className="text-brand-text" />
+            </span>
+            <div className="flex-1">
+              <p className="text-[13.5px] font-extrabold">Complete your seller profile</p>
+              <p className="text-xs text-muted-foreground">
+                Add a bio and your service areas so buyers trust you faster.
+              </p>
+            </div>
+            <Icon name="chevron_right" className="text-brand-text" />
+          </Link>
+        </div>
+      ) : null}
+
       <div className="grid grid-cols-2 gap-3 px-[22px] pb-24 pt-5">
         {links.map((l) => (
           <Link

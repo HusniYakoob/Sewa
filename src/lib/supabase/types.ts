@@ -76,6 +76,8 @@ export interface SellerProfile extends Timestamps {
   bank_account_number: string | null;
   bank_name: string | null;
   bank_branch: string | null;
+  description: string | null;
+  service_areas: string[];
 }
 
 export interface Category {

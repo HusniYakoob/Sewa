@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { serviceLimitFor } from "@/lib/pricing";
 
 export interface ServiceFormState {
   error?: string;
@@ -35,11 +36,24 @@ export async function createService(
 
   const { data: sellerData } = await supabase
     .from("seller_profiles")
-    .select("id")
+    .select("id, is_pro")
     .eq("user_id", user.id)
     .maybeSingle();
-  const seller = sellerData as { id: string } | null;
+  const seller = sellerData as { id: string; is_pro: boolean } | null;
   if (!seller) return { error: "Seller profile not found." };
+
+  const { count } = await supabase
+    .from("services")
+    .select("id", { count: "exact", head: true })
+    .eq("seller_id", seller.id);
+  const limit = serviceLimitFor(seller.is_pro);
+  if ((count ?? 0) >= limit) {
+    return {
+      error: seller.is_pro
+        ? `You've reached the Pro limit of ${limit} services.`
+        : `Free plan allows up to ${limit} services. Go Pro for up to 10.`,
+    };
+  }
 
   const { error } = await supabase.from("services").insert({
     seller_id: seller.id,
