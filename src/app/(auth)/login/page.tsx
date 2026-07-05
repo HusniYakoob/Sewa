@@ -5,6 +5,7 @@ import Link from "next/link";
 import { signIn, signInWithGoogle, type AuthState } from "../actions";
 import { Button } from "@/components/ui/button";
 import { Field, IconInput } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Icon } from "@/components/ui/icon";
 import { GoogleButton, AuthDivider } from "../parts";
 
@@ -13,6 +14,14 @@ export default function LoginPage() {
 
   return (
     <div>
+      <Link
+        href="/"
+        className="mb-6 flex h-11 w-11 items-center justify-center rounded-full border-[1.5px] border-border bg-surface text-foreground transition-colors hover:bg-surface-muted"
+        aria-label="Back"
+      >
+        <Icon name="arrow_back" />
+      </Link>
+
       <h1 className="text-[30px] font-extrabold tracking-tight">Welcome back</h1>
       <p className="mt-2 text-[14.5px] text-muted-foreground">
         Sign in to your Sewa account.
@@ -37,11 +46,9 @@ export default function LoginPage() {
           />
         </Field>
         <Field label="Password" htmlFor="password">
-          <IconInput
-            icon="lock"
+          <PasswordInput
             id="password"
             name="password"
-            type="password"
             autoComplete="current-password"
             placeholder="••••••••"
             required

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { signUp, signInWithGoogle, type AuthState } from "../actions";
 import { Button } from "@/components/ui/button";
 import { Field, IconInput } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Icon } from "@/components/ui/icon";
 import { GoogleButton, AuthDivider } from "../parts";
 import { cn } from "@/lib/utils";
@@ -34,6 +35,14 @@ export default function SignupPage() {
 
   return (
     <div>
+      <Link
+        href="/"
+        className="mb-6 flex h-11 w-11 items-center justify-center rounded-full border-[1.5px] border-border bg-surface text-foreground transition-colors hover:bg-surface-muted"
+        aria-label="Back"
+      >
+        <Icon name="arrow_back" />
+      </Link>
+
       <h1 className="text-[30px] font-extrabold tracking-tight">
         Create your account
       </h1>
@@ -122,11 +131,9 @@ export default function SignupPage() {
           />
         </Field>
         <Field label="Password" htmlFor="password" hint="At least 8 characters.">
-          <IconInput
-            icon="lock"
+          <PasswordInput
             id="password"
             name="password"
-            type="password"
             autoComplete="new-password"
             placeholder="••••••••"
             minLength={8}
@@ -140,11 +147,9 @@ export default function SignupPage() {
           htmlFor="confirm_password"
           error={mismatch ? "Passwords do not match." : undefined}
         >
-          <IconInput
-            icon="lock"
+          <PasswordInput
             id="confirm_password"
             name="confirm_password"
-            type="password"
             autoComplete="new-password"
             placeholder="••••••••"
             minLength={8}

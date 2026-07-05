@@ -3,7 +3,8 @@
 import { useActionState } from "react";
 import { updatePassword, type AuthState } from "../actions";
 import { Button } from "@/components/ui/button";
-import { Field, IconInput } from "@/components/ui/input";
+import { Field } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Icon } from "@/components/ui/icon";
 
 export default function ResetPasswordPage() {
@@ -23,11 +24,9 @@ export default function ResetPasswordPage() {
       </p>
       <form action={action} className="mt-8 flex flex-col gap-4">
         <Field label="New password" htmlFor="password" hint="At least 8 characters.">
-          <IconInput
-            icon="lock"
+          <PasswordInput
             id="password"
             name="password"
-            type="password"
             autoComplete="new-password"
             placeholder="••••••••"
             required
