@@ -12,8 +12,8 @@ export default function LoginPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold tracking-tight">Welcome back</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
+      <h1 className="text-[30px] font-extrabold tracking-tight">Welcome back</h1>
+      <p className="mt-2 text-[14.5px] text-muted-foreground">
         Sign in to your Sewa account.
       </p>
 
