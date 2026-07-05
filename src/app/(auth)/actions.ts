@@ -118,3 +118,46 @@ export async function signOut(): Promise<void> {
   await supabase.auth.signOut();
   redirect("/");
 }
+
+/** Start Google OAuth. Requires the Google provider enabled in Supabase Auth. */
+export async function signInWithGoogle(): Promise<void> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: `${SITE}/auth/callback?next=/home` },
+  });
+  if (error || !data?.url) {
+    redirect("/login?error=google");
+  }
+  redirect(data.url);
+}
+
+/** Email a one-time code, then go to the OTP screen. */
+export async function sendEmailCode(
+  _prev: AuthState,
+  formData: FormData,
+): Promise<AuthState> {
+  const email = String(formData.get("email") ?? "").trim();
+  if (!email) return { error: "Enter your email." };
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: { shouldCreateUser: false },
+  });
+  if (error) return { error: error.message };
+  redirect(`/verify-otp?email=${encodeURIComponent(email)}`);
+}
+
+/** Verify the 6-digit email code and sign in. */
+export async function verifyEmailCode(
+  _prev: AuthState,
+  formData: FormData,
+): Promise<AuthState> {
+  const email = String(formData.get("email") ?? "").trim();
+  const token = String(formData.get("token") ?? "").trim();
+  if (token.length < 6) return { error: "Enter the 6-digit code." };
+  const supabase = await createClient();
+  const { error } = await supabase.auth.verifyOtp({ email, token, type: "email" });
+  if (error) return { error: error.message };
+  redirect("/home");
+}

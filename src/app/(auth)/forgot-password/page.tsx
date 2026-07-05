@@ -3,10 +3,9 @@
 import { useActionState } from "react";
 import Link from "next/link";
 import { requestPasswordReset, type AuthState } from "../actions";
-import { Button } from "@/components/ui/button";
-import { Field, Input } from "@/components/ui/input";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Field, IconInput } from "@/components/ui/input";
 import { Icon } from "@/components/ui/icon";
-import { Card } from "@/components/ui/card";
 
 export default function ForgotPasswordPage() {
   const [state, action, pending] = useActionState<AuthState, FormData>(
@@ -17,31 +16,49 @@ export default function ForgotPasswordPage() {
   if (state.sent) {
     return (
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Check your email</h1>
-        <Card className="mt-6 flex items-center gap-2 border-success/40">
-          <Icon name="mail" className="text-success" />
-          <p className="text-sm">
-            If an account exists for that email, a reset link is on its way.
-          </p>
-        </Card>
-        <p className="mt-6 text-center text-sm text-muted-foreground">
-          <Link href="/login" className="font-medium text-foreground underline underline-offset-4">
-            Back to sign in
-          </Link>
+        <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-brand-tint text-brand-text">
+          <Icon name="mark_email_read" className="text-3xl" filled />
+        </div>
+        <h1 className="text-[30px] font-extrabold tracking-tight">Check your email</h1>
+        <p className="mt-2.5 text-[14.5px] text-muted-foreground">
+          If an account exists for that email, a password reset link is on its way.
+          Follow it to set a new password.
         </p>
+        <Link
+          href="/login"
+          className={buttonVariants({ size: "lg", block: true, className: "mt-8" })}
+        >
+          Back to sign in
+        </Link>
       </div>
     );
   }
 
   return (
     <div>
-      <h1 className="text-2xl font-bold tracking-tight">Reset your password</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Enter your email and we will send a reset link.
+      <Link
+        href="/login"
+        className="mb-6 flex h-11 w-11 items-center justify-center rounded-full border-[1.5px] border-border bg-surface text-foreground transition-colors hover:bg-surface-muted"
+        aria-label="Back"
+      >
+        <Icon name="arrow_back" />
+      </Link>
+
+      <h1 className="text-[30px] font-extrabold tracking-tight">Reset your password</h1>
+      <p className="mt-2.5 text-[14.5px] text-muted-foreground">
+        Enter your email and we&apos;ll send you a reset link.
       </p>
       <form action={action} className="mt-8 flex flex-col gap-4">
         <Field label="Email" htmlFor="email">
-          <Input id="email" name="email" type="email" autoComplete="email" required />
+          <IconInput
+            icon="mail"
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            placeholder="you@example.com"
+            required
+          />
         </Field>
         {state.error ? (
           <p className="flex items-center gap-1.5 text-sm text-danger">
@@ -49,12 +66,12 @@ export default function ForgotPasswordPage() {
             {state.error}
           </p>
         ) : null}
-        <Button type="submit" block disabled={pending}>
+        <Button type="submit" size="lg" block disabled={pending}>
           {pending ? "Sending" : "Send reset link"}
         </Button>
       </form>
       <p className="mt-6 text-center text-sm text-muted-foreground">
-        <Link href="/login" className="font-medium text-foreground underline underline-offset-4">
+        <Link href="/login" className="font-bold text-brand-text underline-offset-4 hover:underline">
           Back to sign in
         </Link>
       </p>

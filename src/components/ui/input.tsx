@@ -1,5 +1,6 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { Icon } from "@/components/ui/icon";
 
 /**
  * Input — text/number/email field. 48px tall to match buttons and stay
@@ -18,6 +19,26 @@ export function Input({ className, type = "text", ...props }: InputProps) {
       )}
       {...props}
     />
+  );
+}
+
+/**
+ * IconInput — Input with a leading Material Symbol icon. Used across every
+ * onboarding form so the fields look uniform (mail / lock / person / call).
+ */
+export interface IconInputProps extends InputProps {
+  icon: string;
+}
+
+export function IconInput({ icon, className, ...props }: IconInputProps) {
+  return (
+    <div className="relative">
+      <Icon
+        name={icon}
+        className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[1.3rem] text-muted-foreground"
+      />
+      <Input className={cn("pl-11", className)} {...props} />
+    </div>
   );
 }
 

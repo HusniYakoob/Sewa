@@ -16,16 +16,16 @@ export default async function Home() {
 
       {/* Wordmark */}
       <div className="relative flex flex-1 flex-col items-center justify-center gap-2.5">
-        <div className="text-[64px] font-black leading-none tracking-[-2.5px]">
-          sewa<span className="text-accent">.</span>
+        <div className="splash-word text-[64px] font-black leading-none tracking-[-2.5px]">
+          sewa<span className="splash-dot text-accent">.</span>
         </div>
-        <div className="text-base font-semibold tracking-wide text-[#E4D9FB]">
+        <div className="splash-tag text-base font-semibold tracking-wide text-[#E4D9FB]">
           Book it. Done.
         </div>
       </div>
 
       {/* Entry actions */}
-      <div className="relative flex flex-col gap-3 px-6 pb-8">
+      <div className="splash-actions relative flex flex-col gap-3 px-6 pb-8">
         <Link
           href="/signup"
           className="flex h-14 items-center justify-center rounded-2xl bg-white text-[15.5px] font-extrabold text-brand shadow-[0_12px_30px_-10px_rgba(0,0,0,.4)] transition active:scale-[.98]"
