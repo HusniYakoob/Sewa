@@ -45,6 +45,11 @@ export type WalletEntryType =
   | "adjustment";
 export type WalletEntryStatus = "pending" | "available" | "withdrawn" | "reversed";
 export type Actor = "buyer" | "seller" | "admin" | "system";
+export type ActiveContext = "buyer" | "seller";
+export type PlanKey = "starter" | "pro" | "business";
+export type PackageTier = "basic" | "standard" | "premium";
+export type MessageType = "text" | "photo" | "location";
+export type ReportStatus = "open" | "reviewing" | "resolved";
 
 type Timestamps = { created_at: string; updated_at: string };
 
@@ -57,6 +62,7 @@ export interface Profile extends Timestamps {
   email: string | null;
   avatar_url: string | null;
   bio: string | null;
+  active_context: ActiveContext;
 }
 
 export interface SellerProfile extends Timestamps {
@@ -78,6 +84,18 @@ export interface SellerProfile extends Timestamps {
   bank_branch: string | null;
   description: string | null;
   service_areas: string[];
+  plan_id: string | null;
+  plan_renews_at: string | null;
+}
+
+export interface Plan {
+  id: string;
+  key: PlanKey;
+  name: string;
+  price_lkr: number;
+  commission_rate: number;
+  ad_limit: number;
+  sort_order: number;
 }
 
 export interface Category {
@@ -95,9 +113,10 @@ export interface Service extends Timestamps {
   id: string;
   seller_id: string;
   category_id: string;
+  subcategory_id: string | null;
   title: string;
   description: string;
-  price: number;
+  price: number; // "starting from" cache = cheapest active package's price
   price_unit: string;
   location_area: string | null;
   status: ServiceStatus;
@@ -105,11 +124,37 @@ export interface Service extends Timestamps {
   total_bookings: number;
 }
 
+export interface Subcategory {
+  id: string;
+  category_id: string;
+  name: string;
+  slug: string;
+  icon: string | null;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface ServicePackage {
+  id: string;
+  service_id: string;
+  tier: PackageTier;
+  name: string;
+  description: string;
+  price: number;
+  price_unit: string;
+  delivery_days: number | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Booking extends Timestamps {
   id: string;
   buyer_id: string;
   seller_id: string;
   service_id: string;
+  package_id: string | null;
   status: BookingStatus;
   scheduled_at: string;
   duration_hours: number;
@@ -130,6 +175,9 @@ export interface Booking extends Timestamps {
   cancelled_by: Actor | null;
   cancel_reason: string | null;
   cancellation_fee: number;
+  reschedule_proposed_at: string | null;
+  reschedule_requested_by: Actor | null;
+  reschedule_note: string | null;
 }
 
 export interface BookingPins {
@@ -252,6 +300,49 @@ export interface AuditLog {
   created_at: string;
 }
 
+export interface Conversation {
+  id: string;
+  buyer_id: string;
+  seller_id: string;
+  booking_id: string | null;
+  buyer_last_read_at: string | null;
+  seller_last_read_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Message {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  type: MessageType;
+  body: string | null;
+  photo_url: string | null;
+  location_lat: number | null;
+  location_lng: number | null;
+  location_label: string | null;
+  created_at: string;
+}
+
+export interface Block {
+  blocker_id: string;
+  blocked_id: string;
+  created_at: string;
+}
+
+export interface Report {
+  id: string;
+  reporter_id: string;
+  reported_user_id: string | null;
+  booking_id: string | null;
+  category: string;
+  subject: string;
+  details: string | null;
+  photo_url: string | null;
+  status: ReportStatus;
+  created_at: string;
+}
+
 /** Generic table shape: Row is the selected row; Insert/Update are loose. */
 type Table<Row> = {
   Row: Row;
@@ -266,7 +357,10 @@ export interface Database {
       profiles: Table<Profile>;
       seller_profiles: Table<SellerProfile>;
       categories: Table<Category>;
+      subcategories: Table<Subcategory>;
       services: Table<Service>;
+      service_packages: Table<ServicePackage>;
+      plans: Table<Plan>;
       bookings: Table<Booking>;
       booking_pins: Table<BookingPins>;
       payments: Table<Payment>;
@@ -277,6 +371,10 @@ export interface Database {
       payouts: Table<Payout>;
       payment_logs: Table<PaymentLog>;
       audit_logs: Table<AuditLog>;
+      conversations: Table<Conversation>;
+      messages: Table<Message>;
+      blocks: Table<Block>;
+      reports: Table<Report>;
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
