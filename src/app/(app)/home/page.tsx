@@ -9,7 +9,7 @@ import type { BookingStatus } from "@/lib/supabase/types";
 export default async function HomePage() {
   const profile = await getCurrentProfile();
   const supabase = await createClient();
-  const isSeller = profile?.role === "seller";
+  const isSeller = profile?.active_context === "seller";
   const firstName = profile?.full_name?.split(" ")[0] || "there";
 
   if (isSeller) {
@@ -89,14 +89,20 @@ export default async function HomePage() {
             <span className="flex items-center gap-1.5 rounded-full border border-white/30 bg-white/15 py-2 pl-2.5 pr-3 text-[13px] font-bold">
               <Icon name="location_on" filled className="text-base" /> Nugegoda
             </span>
-            <Link href="/profile">
-              <Avatar
-                avatarUrl={profile?.avatar_url}
-                name={profile?.full_name}
-                size="sm"
-                className="h-[38px] w-[38px] bg-white text-[13px] text-brand"
-              />
-            </Link>
+            <div className="flex items-center gap-2.5">
+              <span className="relative flex h-[38px] w-[38px] items-center justify-center rounded-full border border-white/30 bg-white/15">
+                <Icon name="notifications" className="text-[19px]" />
+                <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full border border-brand bg-accent" />
+              </span>
+              <Link href="/account">
+                <Avatar
+                  avatarUrl={profile?.avatar_url}
+                  name={profile?.full_name}
+                  size="sm"
+                  className="h-[38px] w-[38px] bg-white text-[13px] text-brand"
+                />
+              </Link>
+            </div>
           </div>
           <h1 className="mt-5 text-[30px] font-extrabold leading-[1.08] tracking-tight">
             Let&rsquo;s get it done,
@@ -146,7 +152,7 @@ export default async function HomePage() {
       <div className={active ? "px-[22px] pt-1.5" : "px-[22px] pt-5"}>
         <div className="flex items-baseline justify-between">
           <h2 className="text-[17px] font-extrabold">Services</h2>
-          <Link href="/browse" className="text-[12.5px] font-extrabold text-brand-text">
+          <Link href="/categories" className="text-[12.5px] font-extrabold text-brand-text">
             See all
           </Link>
         </div>
@@ -262,7 +268,7 @@ async function SellerHome({
             <span className="text-[13px] font-bold text-white/90">
               {seller?.is_pro ? "Sewa Pro" : "Seller"}
             </span>
-            <Link href="/profile">
+            <Link href="/account">
               <Avatar
                 avatarUrl={avatarUrl}
                 name={name}

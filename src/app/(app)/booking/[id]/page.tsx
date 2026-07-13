@@ -146,6 +146,33 @@ export default async function BookingPage({
         </p>
       </div>
 
+      {isPaid && booking.status !== "completed" ? (
+        <div className="mx-[22px] mt-5 flex items-center justify-between rounded-2xl border-[1.5px] border-border bg-surface p-4">
+          {(["Confirmed", "Scheduled today", "Complete"] as const).map((step, i) => {
+            const stepIndex = ["accepted", "arrived", "in_progress"].includes(booking.status)
+              ? booking.status === "accepted"
+                ? 0
+                : 1
+              : 2;
+            const done = i <= stepIndex;
+            return (
+              <div key={step} className="flex flex-1 flex-col items-center gap-1.5">
+                <span
+                  className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-extrabold ${
+                    done ? "bg-brand text-white" : "bg-surface-muted text-muted-foreground"
+                  }`}
+                >
+                  {done ? <Icon name="check" className="text-base" /> : i + 1}
+                </span>
+                <span className="text-center text-[10.5px] font-bold text-muted-foreground">
+                  {step}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
+
       {cancelled ? (
         <div className="mx-[22px] mt-4 flex items-center gap-2 rounded-2xl border border-warning/40 bg-surface p-3.5">
           <Icon name="info" className="text-warning" />

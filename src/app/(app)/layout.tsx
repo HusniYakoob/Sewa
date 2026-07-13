@@ -8,15 +8,16 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const profile = await getCurrentProfile();
-  if (!profile) redirect("/login");
+  if (!profile) redirect("/welcome");
   if (profile.role === "admin") redirect("/admin");
+  if (!profile.onboarding_completed) redirect("/choose-role");
 
   return (
     <div className="flex min-h-dvh flex-col">
       <div className="mx-auto w-full max-w-md flex-1 pb-[calc(4rem+env(safe-area-inset-bottom)+1rem)]">
         {children}
       </div>
-      <BottomNav role={profile.role} />
+      <BottomNav context={profile.active_context} />
     </div>
   );
 }

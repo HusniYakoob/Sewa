@@ -63,6 +63,7 @@ export interface Profile extends Timestamps {
   avatar_url: string | null;
   bio: string | null;
   active_context: ActiveContext;
+  onboarding_completed: boolean;
 }
 
 export interface SellerProfile extends Timestamps {

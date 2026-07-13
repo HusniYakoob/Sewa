@@ -165,3 +165,97 @@ export async function verifyEmailCode(
   if (error) return { error: error.message };
   redirect("/home");
 }
+
+/**
+ * Text a one-time code to a Sri Lankan mobile number, then go to the phone
+ * OTP screen. Requires an SMS provider (e.g. Twilio) enabled in Supabase
+ * Auth — until then this errors gracefully with Supabase's own message.
+ */
+export async function sendPhoneCode(
+  _prev: AuthState,
+  formData: FormData,
+): Promise<AuthState> {
+  const phone = String(formData.get("phone") ?? "").trim();
+  if (!/^\+94\d{9}$/.test(phone)) {
+    return { error: "Enter a valid Sri Lankan mobile number." };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithOtp({ phone });
+  if (error) return { error: error.message };
+  redirect(`/verify-phone?phone=${encodeURIComponent(phone)}`);
+}
+
+/**
+ * Verify the phone OTP and sign in. First-time accounts (onboarding not yet
+ * completed) go to /choose-role; returning users go straight to /home.
+ */
+export async function verifyPhoneCode(
+  _prev: AuthState,
+  formData: FormData,
+): Promise<AuthState> {
+  const phone = String(formData.get("phone") ?? "").trim();
+  const token = String(formData.get("token") ?? "").trim();
+  if (token.length < 6) return { error: "Enter the 6-digit code." };
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.verifyOtp({ phone, token, type: "sms" });
+  if (error) return { error: error.message };
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Something went wrong. Try again." };
+
+  await supabase.from("profiles").update({ phone_verified: true }).eq("id", user.id);
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("onboarding_completed")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  redirect(profile?.onboarding_completed ? "/home" : "/choose-role");
+}
+
+/**
+ * a5 — finish onboarding by picking buyer or seller. Creates a
+ * seller_profiles row (Starter plan) the first time someone chooses seller;
+ * safe to call again later from Account's "Become a Seller" banner.
+ */
+export async function completeRoleChoice(formData: FormData): Promise<void> {
+  const role = String(formData.get("role") ?? "") as UserRole;
+  if (role !== "buyer" && role !== "seller") redirect("/choose-role");
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/welcome");
+
+  await supabase
+    .from("profiles")
+    .update({ role, active_context: role, onboarding_completed: true })
+    .eq("id", user.id);
+
+  if (role === "seller") {
+    const { data: existing } = await supabase
+      .from("seller_profiles")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!existing) {
+      const { data: starterPlan } = await supabase
+        .from("plans")
+        .select("id, commission_rate")
+        .eq("key", "starter")
+        .maybeSingle();
+      await supabase.from("seller_profiles").insert({
+        user_id: user.id,
+        plan_id: starterPlan?.id,
+        commission_rate: starterPlan?.commission_rate ?? 0.1,
+      });
+    }
+  }
+
+  redirect("/home");
+}

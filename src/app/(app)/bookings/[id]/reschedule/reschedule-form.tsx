@@ -2,7 +2,7 @@
 
 import { useActionState, useMemo, useState } from "react";
 import Link from "next/link";
-import { createBooking, type BookingState } from "./actions";
+import { requestReschedule, type RescheduleState } from "./actions";
 import { Icon } from "@/components/ui/icon";
 import { cn } from "@/lib/utils";
 
@@ -30,27 +30,20 @@ function to24Hour(slot: string): string {
   return `${String(hour).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
-export function BookingForm({
-  serviceId,
+export function RescheduleForm({
+  bookingId,
   title,
-  area,
-  packageId,
-  packageName,
-  price,
+  originalTime,
 }: {
-  serviceId: string;
+  bookingId: string;
   title: string;
-  area: string | null;
-  packageId: string | null;
-  packageName: string | null;
-  price: number;
+  originalTime: string;
 }) {
   const [monthOffset, setMonthOffset] = useState(0);
   const [date, setDate] = useState<Date | null>(null);
   const [time, setTime] = useState<string | null>(null);
-  const [location, setLocation] = useState(area ?? "");
-  const [state, action, pending] = useActionState<BookingState, FormData>(
-    createBooking,
+  const [state, action, pending] = useActionState<RescheduleState, FormData>(
+    requestReschedule,
     {},
   );
 
@@ -64,43 +57,39 @@ export function BookingForm({
   const isoDate = date
     ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
     : "";
-  const time24 = time ? to24Hour(time) : "";
-  const canContinue = Boolean(date && time && location.trim());
-  const ctaLabel =
-    date && time
-      ? `${date.toLocaleDateString("en-LK", { weekday: "short", day: "numeric", month: "short" })}, ${time} — review`
-      : "Pick a date & time";
 
   return (
     <form action={action} className="flex min-h-dvh flex-col px-[22px] pt-3">
-      <input type="hidden" name="service_id" value={serviceId} />
-      <input type="hidden" name="package_id" value={packageId ?? ""} />
+      <input type="hidden" name="booking_id" value={bookingId} />
       <input type="hidden" name="date" value={isoDate} />
-      <input type="hidden" name="time" value={time24} />
+      <input type="hidden" name="time" value={time ? to24Hour(time) : ""} />
 
       <div className="flex items-center gap-3">
         <Link
-          href={`/service/${serviceId}`}
+          href="/bookings"
           aria-label="Back"
           className="flex h-[42px] w-[42px] flex-none items-center justify-center rounded-full border border-border bg-surface"
         >
           <Icon name="arrow_back" />
         </Link>
-        <p className="flex-1 text-[17px] font-extrabold">Pick a date &amp; time</p>
-        <span className="text-xs font-extrabold text-brand-text">2 / 3</span>
-      </div>
-      <div className="mt-3.5 flex gap-1.5">
-        <span className="h-1 flex-1 rounded-full bg-brand" />
-        <span className="h-1 flex-1 rounded-full bg-brand" />
-        <span className="h-1 flex-1 rounded-full bg-border" />
+        <p className="text-[17px] font-extrabold">Reschedule booking</p>
       </div>
 
-      <p className="mt-4 text-xs text-muted-foreground">
-        {title}
-        {packageName ? ` · ${packageName} package` : ""}
+      <p className="mt-4 text-xs text-muted-foreground">{title}</p>
+      <p className="mt-1 text-xs">
+        <span className="font-bold text-muted-foreground/50">ORIGINAL TIME</span>{" "}
+        <span className="text-muted-foreground line-through">
+          {new Date(originalTime).toLocaleString("en-LK", {
+            weekday: "short",
+            day: "numeric",
+            month: "short",
+            hour: "numeric",
+            minute: "2-digit",
+          })}
+        </span>
       </p>
 
-      <div className="mt-3 rounded-[22px] border-[1.5px] border-border bg-surface p-4.5 shadow-[0_6px_20px_-14px_rgba(131,77,251,.5)]">
+      <div className="mt-3.5 rounded-[22px] border-[1.5px] border-border bg-surface p-4.5 shadow-[0_6px_20px_-14px_rgba(131,77,251,.5)]">
         <div className="flex items-center justify-between">
           <button
             type="button"
@@ -189,18 +178,17 @@ export function BookingForm({
         ))}
       </div>
 
-      <div className="mt-5">
-        <label htmlFor="location" className="text-[13px] font-bold text-foreground">
-          Address
+      <div className="mt-4">
+        <label htmlFor="note" className="text-[13px] font-bold">
+          Note to the pro (optional)
         </label>
-        <input
-          id="location"
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
-          placeholder="Where should the pro come?"
-          className="mt-1.5 h-12 w-full rounded-xl border-[1.5px] border-border bg-surface px-4 text-sm font-semibold placeholder:font-normal placeholder:text-muted-foreground focus-visible:border-brand focus-visible:outline-none"
+        <textarea
+          id="note"
+          name="note"
+          rows={2}
+          placeholder="Let them know why…"
+          className="mt-1.5 w-full rounded-xl border-[1.5px] border-border bg-surface p-3.5 text-sm placeholder:text-muted-foreground focus-visible:border-brand focus-visible:outline-none"
         />
-        <input type="hidden" name="location" value={location} />
       </div>
 
       {state.error ? (
@@ -214,11 +202,10 @@ export function BookingForm({
       <div className="py-6">
         <button
           type="submit"
-          disabled={!canContinue || pending}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-brand py-4 text-[15.5px] font-extrabold text-white shadow-[0_12px_26px_rgba(131,77,251,.35)] transition active:scale-[.97] disabled:opacity-40"
+          disabled={!date || !time || pending}
+          className="flex w-full items-center justify-center rounded-2xl bg-brand py-4 text-[15.5px] font-extrabold text-white shadow-[0_12px_26px_rgba(131,77,251,.35)] transition active:scale-[.97] disabled:opacity-40"
         >
-          {pending ? "Please wait…" : ctaLabel}
-          <Icon name="arrow_forward" className="text-xl" />
+          {pending ? "Sending…" : "Send reschedule request"}
         </button>
       </div>
     </form>

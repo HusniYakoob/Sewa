@@ -8,20 +8,20 @@ export interface BookingState {
   error?: string;
 }
 
-/** Create a booking (status pending) and send the buyer to the payment step. */
+/** Create a booking (status pending) from a chosen package, then send the buyer to pay. */
 export async function createBooking(
   _prev: BookingState,
   formData: FormData,
 ): Promise<BookingState> {
   const serviceId = String(formData.get("service_id") ?? "");
+  const packageId = String(formData.get("package_id") ?? "");
   const date = String(formData.get("date") ?? "");
   const time = String(formData.get("time") ?? "");
-  const duration = Number(formData.get("duration") ?? 1) || 1;
   const location = String(formData.get("location") ?? "").trim();
   const notes = String(formData.get("notes") ?? "").trim();
 
-  if (!serviceId || !date || !time) {
-    return { error: "Pick a date and time." };
+  if (!serviceId || !packageId || !date || !time || !location) {
+    return { error: "Pick a date, time and address." };
   }
   const scheduledAt = new Date(`${date}T${time}`);
   if (Number.isNaN(scheduledAt.getTime()) || scheduledAt.getTime() < Date.now()) {
@@ -36,14 +36,10 @@ export async function createBooking(
 
   const { data: svc } = await supabase
     .from("services")
-    .select(
-      "id, price, price_unit, seller_id, status, seller:seller_profiles(commission_rate)",
-    )
+    .select("id, seller_id, status, seller:seller_profiles(commission_rate)")
     .eq("id", serviceId)
     .maybeSingle();
   const service = svc as {
-    price: number;
-    price_unit: string;
     seller_id: string;
     status: string;
     seller: { commission_rate: number } | null;
@@ -53,11 +49,16 @@ export async function createBooking(
     return { error: "This service is not available." };
   }
 
+  const { data: pkg } = await supabase
+    .from("service_packages")
+    .select("id, price")
+    .eq("id", packageId)
+    .eq("service_id", serviceId)
+    .maybeSingle();
+  if (!pkg) return { error: "Choose a package." };
+
   const commissionRate = Number(service.seller?.commission_rate ?? 0.1);
-  const serviceAmount =
-    service.price_unit === "hour"
-      ? Number(service.price) * duration
-      : Number(service.price);
+  const serviceAmount = Number(pkg.price);
   const fees = computeFees(serviceAmount, commissionRate);
 
   const { data: booking, error } = await supabase
@@ -66,9 +67,10 @@ export async function createBooking(
       buyer_id: user.id,
       seller_id: service.seller_id,
       service_id: serviceId,
+      package_id: packageId,
       status: "pending",
       scheduled_at: scheduledAt.toISOString(),
-      duration_hours: duration,
+      duration_hours: 1,
       location: location || null,
       notes: notes || null,
       service_amount: fees.serviceAmount,
