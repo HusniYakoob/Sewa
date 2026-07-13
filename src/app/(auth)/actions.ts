@@ -257,5 +257,5 @@ export async function completeRoleChoice(formData: FormData): Promise<void> {
     }
   }
 
-  redirect("/home");
+  redirect("/notifications-permission");
 }
