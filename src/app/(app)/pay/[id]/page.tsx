@@ -77,7 +77,7 @@ export default async function PayPage({
   };
 
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className="flex min-h-dvh flex-col pb-24">
       <div className="flex items-center gap-3 px-[22px] pt-3">
         <Link
           href="/bookings"

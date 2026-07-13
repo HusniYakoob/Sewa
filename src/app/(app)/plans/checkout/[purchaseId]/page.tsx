@@ -56,7 +56,7 @@ export default async function PlanCheckoutPage({
   };
 
   return (
-    <div className="flex min-h-dvh flex-col px-[22px] pt-3">
+    <div className="flex min-h-dvh flex-col px-[22px] pb-24 pt-3">
       <p className="text-[17px] font-extrabold">Upgrade to {purchase.plan?.name}</p>
       <div className="mt-5 rounded-2xl border-[1.5px] border-border bg-surface p-4">
         <div className="flex justify-between text-sm">

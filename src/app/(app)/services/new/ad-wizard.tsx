@@ -43,7 +43,7 @@ export function AdWizard({ categories }: { categories: Category[] }) {
   ][step];
 
   return (
-    <form action={action} className="flex min-h-dvh flex-col px-[22px] pt-3">
+    <form action={action} className="flex min-h-dvh flex-col px-[22px] pb-24 pt-3">
       <input type="hidden" name="title" value={title} />
       <input type="hidden" name="category_id" value={categoryId} />
       <input type="hidden" name="subcategory_id" value={subcategoryId} />

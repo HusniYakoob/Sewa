@@ -72,7 +72,7 @@ export function BookingForm({
       : "Pick a date & time";
 
   return (
-    <form action={action} className="flex min-h-dvh flex-col px-[22px] pt-3">
+    <form action={action} className="flex min-h-dvh flex-col px-[22px] pb-24 pt-3">
       <input type="hidden" name="service_id" value={serviceId} />
       <input type="hidden" name="package_id" value={packageId ?? ""} />
       <input type="hidden" name="date" value={isoDate} />
