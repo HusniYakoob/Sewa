@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { Icon } from "@/components/ui/icon";
-import { uploadAvatar } from "@/app/(app)/profile/actions";
+import { uploadAvatar } from "@/app/(app)/account/edit/actions";
 
 /**
  * AvatarUpload — the profile-photo circle with a camera badge overlay.

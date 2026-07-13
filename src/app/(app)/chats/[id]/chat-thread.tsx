@@ -116,6 +116,13 @@ export function ChatThread({
         <div className="min-w-0 flex-1">
           <p className="truncate text-[14.5px] font-extrabold">{otherName}</p>
         </div>
+        <Link
+          href={`/chats/${conversationId}/options`}
+          aria-label="Options"
+          className="flex h-[38px] w-[38px] flex-none items-center justify-center rounded-full border border-border bg-surface"
+        >
+          <Icon name="more_vert" />
+        </Link>
       </div>
 
       {bookingContext ? (

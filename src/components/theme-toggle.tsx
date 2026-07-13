@@ -17,10 +17,11 @@ export function ThemeToggle() {
   const options = [
     { value: "light", label: "Light", icon: "light_mode" },
     { value: "dark", label: "Dark", icon: "dark_mode" },
+    { value: "system", label: "Auto", icon: "contrast" },
   ] as const;
 
   return (
-    <div className="inline-flex rounded-lg border border-border bg-surface-muted p-1">
+    <div className="flex rounded-2xl bg-surface-muted p-1">
       {options.map((opt) => {
         const active = mounted && theme === opt.value;
         return (
@@ -30,13 +31,11 @@ export function ThemeToggle() {
             onClick={() => setTheme(opt.value)}
             aria-pressed={active}
             className={cn(
-              "inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors",
-              active
-                ? "bg-surface text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground",
+              "flex flex-1 items-center justify-center gap-1.5 rounded-[13px] py-2.5 text-[13px] font-bold transition-colors",
+              active ? "bg-brand text-white shadow-sm font-extrabold" : "text-muted-foreground",
             )}
           >
-            <Icon name={opt.icon} className="text-lg" />
+            <Icon name={opt.icon} filled={active} className="text-[17px]" />
             {opt.label}
           </button>
         );

@@ -249,44 +249,100 @@ async function SellerHome({
   name: string | null;
   avatarUrl: string | null;
 }) {
+  const supabase = await createClient();
   const seller = await getCurrentSellerProfile();
   const profileIncomplete =
     !seller?.description?.trim() || (seller?.service_areas?.length ?? 0) === 0;
 
-  const links = [
-    { href: "/services", icon: "handyman", label: "My services" },
-    { href: "/bookings", icon: "event", label: "Job requests" },
-    { href: "/earnings", icon: "payments", label: "Earnings" },
-    { href: "/verify-nic", icon: "verified_user", label: "Verification" },
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
+
+  const [{ data: earningsRows }, { count: adCount }, { data: currentPlan }] = await Promise.all([
+    supabase
+      .from("wallet_entries")
+      .select("amount")
+      .eq("seller_id", seller?.id ?? "")
+      .eq("type", "earning")
+      .gte("created_at", monthStart.toISOString()),
+    supabase
+      .from("services")
+      .select("id", { count: "exact", head: true })
+      .eq("seller_id", seller?.id ?? ""),
+    seller?.plan_id
+      ? supabase.from("plans").select("key").eq("id", seller.plan_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
+
+  const monthEarnings = (earningsRows ?? []).reduce((sum, r) => sum + Number(r.amount), 0);
+  const adsCount = adCount ?? 0;
+  const upgrade = currentPlan?.key !== "business";
+
+  const stats = [
+    { icon: "task_alt", label: "Jobs completed", value: String(seller?.total_bookings ?? 0) },
+    { icon: "star", label: "Rating", value: (seller?.rating ?? 0).toFixed(1) },
+    { icon: "campaign", label: "Active ads", value: String(adsCount) },
+    {
+      icon: "verified_user",
+      label: "NIC status",
+      value: seller?.nic_verified ? "Verified" : "Pending",
+    },
   ];
+
   return (
     <div>
-      <div className="bg-[linear-gradient(135deg,#834dfb,#6b2fe0)] dark:bg-[linear-gradient(135deg,#834dfb,#5b27c9)] relative overflow-hidden rounded-b-[30px] pb-8 text-white">
-        <div className="absolute -right-12 top-2 h-44 w-44 rounded-full bg-white/[.09]" />
-        <div className="relative px-[22px] pt-4">
-          <div className="flex items-center justify-between">
-            <span className="text-[13px] font-bold text-white/90">
-              {seller?.is_pro ? "Sewa Pro" : "Seller"}
-            </span>
-            <Link href="/account">
-              <Avatar
-                avatarUrl={avatarUrl}
-                name={name}
-                size="sm"
-                className="h-[38px] w-[38px] bg-white text-[13px] text-brand"
-              />
-            </Link>
-          </div>
-          <h1 className="mt-5 text-[30px] font-extrabold leading-[1.08] tracking-tight">
-            Ready to earn,
-            <br />
-            <span className="text-accent">{firstName}.</span>
-          </h1>
+      <div className="flex items-center gap-3 px-[22px] pt-3.5">
+        <div className="flex-1">
+          <p className="text-xs font-bold text-muted-foreground">Good to see you</p>
+          <p className="mt-0.5 text-[19px] font-extrabold">{firstName}</p>
+        </div>
+        <Link href="/account">
+          <Avatar avatarUrl={avatarUrl} name={name} size="sm" className="h-10 w-10" />
+        </Link>
+      </div>
+
+      <div className="relative mx-[22px] mt-3.5 overflow-hidden rounded-[24px] bg-[linear-gradient(135deg,#834dfb,#6b2fe0)] p-5">
+        <div className="pointer-events-none absolute -right-8 -top-8 h-[130px] w-[130px] rounded-full bg-white/10" />
+        <div className="relative">
+          <p className="text-[11px] font-extrabold tracking-wide text-[#D9C9FF]">
+            THIS MONTH&rsquo;S EARNINGS
+          </p>
+          <p className="mt-1 text-[34px] font-extrabold leading-none tracking-tight text-white">
+            {formatLKR(monthEarnings)}
+          </p>
+          {upgrade ? (
+            <>
+              <div className="my-4 h-px bg-white/20" />
+              <div className="flex items-baseline justify-between">
+                <span className="text-xs font-bold text-[#E4D9FB]">
+                  Upgrade for more ads &amp; lower fees
+                </span>
+                <Link href="/plans" className="text-xs font-extrabold text-accent">
+                  View plans →
+                </Link>
+              </div>
+            </>
+          ) : null}
         </div>
       </div>
 
+      <div className="mx-[22px] mt-3.5 grid grid-cols-2 gap-2.5">
+        {stats.map((s) => (
+          <div
+            key={s.label}
+            className="rounded-[18px] border-[1.5px] border-border bg-surface p-3.5"
+          >
+            <span className="flex h-[34px] w-[34px] items-center justify-center rounded-[10px] bg-brand-tint">
+              <Icon name={s.icon} filled className="text-[19px] text-brand-text" />
+            </span>
+            <p className="mt-2 text-[11.5px] font-bold text-muted-foreground">{s.label}</p>
+            <p className="mt-0.5 text-[19px] font-extrabold">{s.value}</p>
+          </div>
+        ))}
+      </div>
+
       {profileIncomplete ? (
-        <div className="px-[22px] pt-4">
+        <div className="px-[22px] pt-3.5">
           <Link
             href="/seller-profile"
             className="flex items-center gap-3 rounded-2xl bg-brand-tint p-3.5"
@@ -306,7 +362,12 @@ async function SellerHome({
       ) : null}
 
       <div className="grid grid-cols-2 gap-3 px-[22px] pb-24 pt-5">
-        {links.map((l) => (
+        {[
+          { href: "/services", icon: "campaign", label: "My Service Ads" },
+          { href: "/bookings", icon: "event", label: "Jobs" },
+          { href: "/earnings", icon: "account_balance_wallet", label: "Wallet" },
+          { href: "/verify-nic", icon: "verified_user", label: "Verification" },
+        ].map((l) => (
           <Link
             key={l.href}
             href={l.href}

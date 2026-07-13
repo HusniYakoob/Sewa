@@ -16,11 +16,12 @@ async function requireParticipant(supabase: Awaited<ReturnType<typeof createClie
 
   const { data: convo } = await supabase
     .from("conversations")
-    .select("id, buyer_id, seller_id")
+    .select("id, buyer_id, seller_id, seller:seller_profiles(user_id)")
     .eq("id", conversationId)
     .maybeSingle();
   if (!convo) return null;
 
+  const sellerUserId = (convo.seller as unknown as { user_id: string } | null)?.user_id ?? null;
   const { data: sellerProfile } = await supabase
     .from("seller_profiles")
     .select("id")
@@ -30,7 +31,17 @@ async function requireParticipant(supabase: Awaited<ReturnType<typeof createClie
   const isSeller = sellerProfile?.id === convo.seller_id;
   if (!isBuyer && !isSeller) return null;
 
-  return { userId: user.id, isBuyer };
+  const otherUserId = isBuyer ? sellerUserId : convo.buyer_id;
+  if (otherUserId) {
+    const { data: block } = await supabase
+      .from("blocks")
+      .select("blocker_id")
+      .or(`and(blocker_id.eq.${user.id},blocked_id.eq.${otherUserId}),and(blocker_id.eq.${otherUserId},blocked_id.eq.${user.id})`)
+      .maybeSingle();
+    if (block) return null;
+  }
+
+  return { userId: user.id, isBuyer, otherUserId };
 }
 
 /** Send a text message. Photo/location messages are inserted client-side after upload. */
@@ -59,6 +70,30 @@ export async function sendMessage(formData: FormData): Promise<MessageState> {
   revalidatePath(`/chats/${conversationId}`);
   revalidatePath("/chats");
   return {};
+}
+
+/** Block the other participant in this conversation. Blocking stops both sides from messaging. */
+export async function blockOtherParticipant(conversationId: string): Promise<void> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const { data: convo } = await supabase
+    .from("conversations")
+    .select("buyer_id, seller_id, seller:seller_profiles(user_id)")
+    .eq("id", conversationId)
+    .maybeSingle();
+  if (!convo) return;
+
+  const sellerUserId = (convo.seller as unknown as { user_id: string } | null)?.user_id ?? null;
+  const otherUserId = convo.buyer_id === user.id ? sellerUserId : convo.buyer_id;
+  if (!otherUserId) return;
+
+  await supabase.from("blocks").insert({ blocker_id: user.id, blocked_id: otherUserId });
+  revalidatePath(`/chats/${conversationId}`);
+  revalidatePath("/chats");
 }
 
 /** Mark the thread as read for the current side (buyer or seller). */

@@ -202,19 +202,25 @@ export async function approveRefund(formData: FormData) {
 }
 
 /** Flip a seller's Pro status (raises their listing limit from 3 to 10). */
-export async function toggleSellerPro(formData: FormData) {
+/** Set a seller's plan directly (comp upgrades, support overrides). */
+export async function setSellerPlan(formData: FormData) {
   const ctx = await requireAdmin();
   if (!ctx) return;
   const sellerId = String(formData.get("seller_id") ?? "");
-  const nextIsPro = formData.get("is_pro") === "true";
-  await ctx.admin.from("seller_profiles").update({ is_pro: nextIsPro }).eq("id", sellerId);
-  await logAction(
-    ctx.admin,
-    ctx.adminId,
-    nextIsPro ? "granted_pro" : "revoked_pro",
-    "seller_profile",
-    sellerId,
-  );
+  const planKey = String(formData.get("plan_key") ?? "");
+
+  const { data: plan } = await ctx.admin
+    .from("plans")
+    .select("id, commission_rate")
+    .eq("key", planKey)
+    .maybeSingle();
+  if (!plan) return;
+
+  await ctx.admin
+    .from("seller_profiles")
+    .update({ plan_id: plan.id, commission_rate: plan.commission_rate })
+    .eq("id", sellerId);
+  await logAction(ctx.admin, ctx.adminId, `set_plan_${planKey}`, "seller_profile", sellerId);
   revalidatePath("/admin/sellers");
 }
 

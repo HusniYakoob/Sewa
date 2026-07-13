@@ -18,7 +18,7 @@ export default async function VerifyNicPage() {
 
   return (
     <div>
-      <AppHeader title="NIC verification" backHref="/profile" />
+      <AppHeader title="NIC verification" backHref="/account" />
 
       {nic?.status === "approved" ? (
         <Card className="m-4 flex items-center gap-2 border-success/40">

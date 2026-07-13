@@ -99,6 +99,17 @@ export interface Plan {
   sort_order: number;
 }
 
+export interface PlanPurchase {
+  id: string;
+  seller_id: string;
+  plan_id: string;
+  amount: number;
+  status: "pending" | "succeeded" | "failed";
+  payhere_payment_id: string | null;
+  created_at: string;
+  processed_at: string | null;
+}
+
 export interface Category {
   id: string;
   name: string;
@@ -376,6 +387,7 @@ export interface Database {
       messages: Table<Message>;
       blocks: Table<Block>;
       reports: Table<Report>;
+      plan_purchases: Table<PlanPurchase>;
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

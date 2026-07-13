@@ -33,7 +33,7 @@ export async function updateSellerDetails(
   if (error) return { error: error.message };
 
   revalidatePath("/seller-profile");
-  revalidatePath("/profile");
+  revalidatePath("/account");
   revalidatePath("/home");
-  redirect("/profile");
+  redirect("/account");
 }

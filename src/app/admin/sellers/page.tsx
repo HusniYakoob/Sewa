@@ -4,22 +4,25 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { EmptyState } from "@/components/ui/empty-state";
-import { serviceLimitFor } from "@/lib/pricing";
-import { toggleSellerPro } from "../actions";
+import { setSellerPlan } from "../actions";
 
 type Row = {
   id: string;
-  is_pro: boolean;
   nic_verified: boolean;
   total_bookings: number;
+  plan: { key: string; ad_limit: number } | null;
   profile: { full_name: string; email: string | null } | null;
 };
+
+const PLAN_KEYS = ["starter", "pro", "business"] as const;
 
 export default async function AdminSellersPage() {
   const supabase = await createClient();
   const { data } = await supabase
     .from("seller_profiles")
-    .select("id, is_pro, nic_verified, total_bookings, profile:profiles(full_name, email)")
+    .select(
+      "id, nic_verified, total_bookings, plan:plans(key, ad_limit), profile:profiles(full_name, email)",
+    )
     .order("created_at", { ascending: false });
 
   const sellers = (data ?? []) as unknown as Row[];
@@ -40,7 +43,7 @@ export default async function AdminSellersPage() {
                   </p>
                   <p className="truncate text-sm text-muted-foreground">
                     {s.profile?.email} · {s.total_bookings} bookings · limit{" "}
-                    {serviceLimitFor(s.is_pro)}
+                    {s.plan?.ad_limit ?? 3}
                   </p>
                 </div>
                 <div className="flex flex-none items-center gap-2">
@@ -49,11 +52,21 @@ export default async function AdminSellersPage() {
                       <Icon name="verified" filled />
                     </Badge>
                   ) : null}
-                  <form action={toggleSellerPro}>
+                  <form action={setSellerPlan} className="flex items-center gap-1.5">
                     <input type="hidden" name="seller_id" value={s.id} />
-                    <input type="hidden" name="is_pro" value={String(!s.is_pro)} />
-                    <Button size="sm" variant={s.is_pro ? "secondary" : "primary"}>
-                      {s.is_pro ? "Revoke Pro" : "Make Pro"}
+                    <select
+                      name="plan_key"
+                      defaultValue={s.plan?.key ?? "starter"}
+                      className="h-9 rounded-md border border-border bg-surface px-2 text-xs capitalize"
+                    >
+                      {PLAN_KEYS.map((k) => (
+                        <option key={k} value={k}>
+                          {k}
+                        </option>
+                      ))}
+                    </select>
+                    <Button size="sm" type="submit">
+                      Set
                     </Button>
                   </form>
                 </div>

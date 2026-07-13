@@ -116,7 +116,7 @@ export default async function ReceiptPage({
             Book again
           </Link>
           <Link
-            href="/help"
+            href={`/help/report?booking=${id}`}
             className="rounded-2xl border-[1.5px] border-danger/30 py-3.5 text-center text-sm font-extrabold text-danger"
           >
             Report an issue with this booking

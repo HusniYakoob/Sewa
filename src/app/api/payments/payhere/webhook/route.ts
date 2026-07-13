@@ -41,6 +41,44 @@ export async function POST(req: Request) {
   }
 
   const admin = createAdminClient();
+
+  // Plan-purchase payments are kept out of the booking/escrow tables
+  // entirely — order_id is prefixed "plan_<purchase id>" to route here.
+  if (p.order_id.startsWith("plan_")) {
+    const purchaseId = p.order_id.slice("plan_".length);
+    const { data: purchase } = await admin
+      .from("plan_purchases")
+      .select("id, seller_id, plan_id, status")
+      .eq("id", purchaseId)
+      .maybeSingle();
+    if (!purchase || purchase.status !== "pending") {
+      return NextResponse.json({ ok: true });
+    }
+
+    const now = new Date().toISOString();
+    await admin
+      .from("plan_purchases")
+      .update({ status: "succeeded", payhere_payment_id: p.payment_id ?? null, processed_at: now })
+      .eq("id", purchaseId);
+
+    const { data: plan } = await admin
+      .from("plans")
+      .select("commission_rate")
+      .eq("id", purchase.plan_id)
+      .maybeSingle();
+
+    await admin
+      .from("seller_profiles")
+      .update({
+        plan_id: purchase.plan_id,
+        commission_rate: plan?.commission_rate ?? 0.1,
+        plan_renews_at: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString(),
+      })
+      .eq("id", purchase.seller_id);
+
+    return NextResponse.json({ ok: true });
+  }
+
   const bookingId = p.order_id;
 
   const { data: bookingRow } = await admin

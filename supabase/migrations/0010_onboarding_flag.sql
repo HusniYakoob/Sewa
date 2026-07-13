@@ -69,3 +69,27 @@ drop trigger if exists trg_seller_commission_on_insert on seller_profiles;
 create trigger trg_seller_commission_on_insert
   before insert on seller_profiles
   for each row execute function public.set_seller_commission_on_insert();
+
+-- ---------------------------------------------------------------------------
+-- Plan purchases — kept separate from `payments` (which is tied 1:1 to a
+-- booking, not-null) so a plan-upgrade charge never touches booking/escrow
+-- code. The PayHere webhook distinguishes the two by order_id prefix
+-- ("plan_<id>" vs a bare booking uuid).
+-- ---------------------------------------------------------------------------
+create table plan_purchases (
+  id              uuid primary key default gen_random_uuid(),
+  seller_id       uuid not null references seller_profiles(id) on delete cascade,
+  plan_id         uuid not null references plans(id),
+  amount          numeric(12,2) not null,
+  status          text not null default 'pending' check (status in ('pending', 'succeeded', 'failed')),
+  payhere_payment_id text,
+  created_at      timestamptz not null default now(),
+  processed_at    timestamptz
+);
+create index idx_plan_purchases_seller on plan_purchases(seller_id);
+
+alter table plan_purchases enable row level security;
+create policy "seller reads own plan purchases" on plan_purchases
+  for select using (seller_id = current_seller_id() or is_admin());
+create policy "seller creates own pending purchase" on plan_purchases
+  for insert with check (seller_id = current_seller_id() and status = 'pending');
