@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { AppHeader } from "@/components/nav/app-header";
 import { Icon } from "@/components/ui/icon";
 import { getCurrentSellerProfile } from "@/lib/auth";
@@ -72,6 +73,25 @@ export default async function BookingPage({
 
   // Seller view: job progression + PIN entry.
   if (booking.buyer_id !== user?.id) {
+    // profiles RLS only lets a user read their own row, so the buyer embed
+    // above is always null from the seller's session — the seller's right
+    // to see the buyer's name/phone comes from owning this booking, which
+    // is already confirmed (RLS on `bookings` wouldn't have returned this
+    // row otherwise), so an admin-client lookup here is safe and scoped.
+    // Best-effort: if the service-role key isn't configured, fall back to
+    // the placeholder name rather than taking the whole page down.
+    try {
+      const admin = createAdminClient();
+      const { data: buyerRow } = await admin
+        .from("profiles")
+        .select("full_name, phone, created_at")
+        .eq("id", booking.buyer_id)
+        .maybeSingle();
+      if (buyerRow) booking.buyer = buyerRow;
+    } catch {
+      // leave booking.buyer as-is (null) — components already fall back gracefully
+    }
+
     const seller = await getCurrentSellerProfile();
     let planLabel = "Starter plan · 12.5%";
     if (seller?.plan_id) {
