@@ -385,8 +385,20 @@ async function SellerHome({
   const monthStart = new Date();
   monthStart.setDate(1);
   monthStart.setHours(0, 0, 0, 0);
+  const weekStart = new Date();
+  weekStart.setDate(weekStart.getDate() - 6);
+  weekStart.setHours(0, 0, 0, 0);
+  const lastMonthStart = new Date(monthStart);
+  lastMonthStart.setMonth(lastMonthStart.getMonth() - 1);
 
-  const [{ data: earningsRows }, { count: adCount }, { data: currentPlan }] = await Promise.all([
+  const [
+    { data: earningsRows },
+    { data: lastMonthRows },
+    { data: weekRows },
+    { count: adCount },
+    { data: currentPlan },
+    { data: recentJobs },
+  ] = await Promise.all([
     supabase
       .from("wallet_entries")
       .select("amount")
@@ -394,17 +406,61 @@ async function SellerHome({
       .eq("type", "earning")
       .gte("created_at", monthStart.toISOString()),
     supabase
+      .from("wallet_entries")
+      .select("amount")
+      .eq("seller_id", seller?.id ?? "")
+      .eq("type", "earning")
+      .gte("created_at", lastMonthStart.toISOString())
+      .lt("created_at", monthStart.toISOString()),
+    supabase
+      .from("wallet_entries")
+      .select("amount, created_at")
+      .eq("seller_id", seller?.id ?? "")
+      .eq("type", "earning")
+      .gte("created_at", weekStart.toISOString()),
+    supabase
       .from("services")
       .select("id", { count: "exact", head: true })
       .eq("seller_id", seller?.id ?? ""),
     seller?.plan_id
       ? supabase.from("plans").select("key").eq("id", seller.plan_id).maybeSingle()
       : Promise.resolve({ data: null }),
+    supabase
+      .from("bookings")
+      .select("id, total_charged, seller_net, completed_at, service:services(title)")
+      .eq("seller_id", seller?.id ?? "")
+      .eq("status", "completed")
+      .order("completed_at", { ascending: false })
+      .limit(3),
   ]);
 
   const monthEarnings = (earningsRows ?? []).reduce((sum, r) => sum + Number(r.amount), 0);
+  const lastMonthEarnings = (lastMonthRows ?? []).reduce((sum, r) => sum + Number(r.amount), 0);
+  const trendPct =
+    lastMonthEarnings > 0 ? Math.round(((monthEarnings - lastMonthEarnings) / lastMonthEarnings) * 100) : null;
   const adsCount = adCount ?? 0;
   const upgrade = currentPlan?.key !== "business";
+  const recent = (recentJobs ?? []) as unknown as {
+    id: string;
+    total_charged: number;
+    seller_net: number;
+    completed_at: string | null;
+    service: { title: string } | null;
+  }[];
+
+  const dayBuckets = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(weekStart);
+    d.setDate(d.getDate() + i);
+    return { date: d, total: 0 };
+  });
+  for (const row of weekRows ?? []) {
+    const d = new Date(row.created_at);
+    const idx = dayBuckets.findIndex((b) => b.date.toDateString() === d.toDateString());
+    if (idx >= 0) dayBuckets[idx].total += Number(row.amount);
+  }
+  const maxDay = Math.max(1, ...dayBuckets.map((b) => b.total));
+  const weekTotal = dayBuckets.reduce((s, b) => s + b.total, 0);
+  const hour = new Date().toLocaleString("en-US", { hour: "numeric", hour12: false, timeZone: "Asia/Colombo" });
 
   const stats = [
     { icon: "task_alt", label: "Jobs completed", value: String(seller?.total_bookings ?? 0) },
@@ -419,38 +475,82 @@ async function SellerHome({
 
   return (
     <div>
-      <div className="flex items-center gap-3 px-[22px] pt-3.5">
+      <div className="flex items-center gap-2.5 px-[22px] pt-3.5">
         <div className="flex-1">
-          <p className="text-xs font-bold text-muted-foreground">Good to see you</p>
+          <p className="text-xs font-bold text-muted-foreground">{greetingFor(Number(hour))}</p>
           <p className="mt-0.5 text-[19px] font-extrabold">{firstName}</p>
         </div>
+        <span className="relative flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface">
+          <Icon name="notifications" className="text-[19px]" />
+          <span className="absolute right-2.5 top-2.5 h-1.5 w-1.5 rounded-full border border-surface bg-danger" />
+        </span>
         <Link href="/account">
           <Avatar avatarUrl={avatarUrl} name={name} size="sm" className="h-10 w-10" />
         </Link>
       </div>
 
-      <div className="relative mx-[22px] mt-3.5 overflow-hidden rounded-[24px] bg-[linear-gradient(135deg,#834dfb,#6b2fe0)] p-5">
-        <div className="pointer-events-none absolute -right-8 -top-8 h-[130px] w-[130px] rounded-full bg-white/10" />
-        <div className="relative">
-          <p className="text-[11px] font-extrabold tracking-wide text-[#D9C9FF]">
-            THIS MONTH&rsquo;S EARNINGS
-          </p>
-          <p className="mt-1 text-[34px] font-extrabold leading-none tracking-tight text-white">
-            {formatLKR(monthEarnings)}
-          </p>
-          {upgrade ? (
-            <>
-              <div className="my-4 h-px bg-white/20" />
-              <div className="flex items-baseline justify-between">
-                <span className="text-xs font-bold text-[#E4D9FB]">
-                  Upgrade for more ads &amp; lower fees
+      <div className="relative mx-[22px] mt-3.5 overflow-hidden rounded-[24px] shadow-[0_10px_28px_rgba(131,77,251,.14)]">
+        <div className="relative overflow-hidden bg-[linear-gradient(135deg,#834dfb,#6b2fe0)] p-5">
+          <div className="pointer-events-none absolute -right-8 -top-8 h-[130px] w-[130px] rounded-full bg-white/10" />
+          <div className="relative">
+            <p className="text-[11px] font-extrabold tracking-wide text-[#D9C9FF]">
+              THIS MONTH&rsquo;S EARNINGS
+            </p>
+            <p className="mt-1 text-[34px] font-extrabold leading-none tracking-tight text-white">
+              {formatLKR(monthEarnings)}
+            </p>
+            {trendPct !== null ? (
+              <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white/[.16] px-2.5 py-1">
+                <Icon
+                  name={trendPct >= 0 ? "trending_up" : "trending_down"}
+                  filled
+                  className="text-sm text-[#3DDC84]"
+                />
+                <span className="text-[11.5px] font-bold text-white">
+                  {trendPct >= 0 ? "+" : ""}
+                  {trendPct}% vs last month
                 </span>
-                <Link href="/plans" className="text-xs font-extrabold text-accent">
-                  View plans →
-                </Link>
+              </span>
+            ) : null}
+            {upgrade ? (
+              <>
+                <div className="my-4 h-px bg-white/20" />
+                <div className="flex items-baseline justify-between">
+                  <span className="text-xs font-bold text-[#E4D9FB]">
+                    Upgrade for more ads &amp; lower fees
+                  </span>
+                  <Link href="/plans" className="text-xs font-extrabold text-accent">
+                    View plans →
+                  </Link>
+                </div>
+              </>
+            ) : null}
+          </div>
+        </div>
+        <div className="bg-surface p-4.5">
+          <p className="text-xs font-bold text-muted-foreground">My income</p>
+          <p className="mt-0.5 text-2xl font-extrabold">{formatLKR(weekTotal)}</p>
+          <p className="text-[11px] text-muted-foreground/70">Last 7 days</p>
+          <div className="mt-4 flex h-[70px] items-end gap-2">
+            {dayBuckets.map((b, i) => (
+              <div key={i} className="flex-1">
+                <div
+                  className="mx-auto max-w-[20px] rounded-md bg-brand"
+                  style={{ height: `${Math.max(6, (b.total / maxDay) * 70)}px` }}
+                />
               </div>
-            </>
-          ) : null}
+            ))}
+          </div>
+          <div className="mt-1.5 flex gap-2">
+            {dayBuckets.map((b, i) => (
+              <span
+                key={i}
+                className="flex-1 text-center text-[10px] font-bold text-muted-foreground/60"
+              >
+                {b.date.toLocaleDateString("en-LK", { weekday: "narrow" })}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -486,6 +586,39 @@ async function SellerHome({
             </div>
             <Icon name="chevron_right" className="text-brand-text" />
           </Link>
+        </div>
+      ) : null}
+
+      {recent.length > 0 ? (
+        <div className="mx-[22px] mt-3.5 rounded-[20px] border-[1.5px] border-border bg-surface p-4">
+          <div className="mb-2.5 flex items-center justify-between">
+            <span className="text-sm font-extrabold">Recent payouts</span>
+            <Link href="/earnings" className="text-xs font-extrabold text-brand-text">
+              See all
+            </Link>
+          </div>
+          <div className="flex flex-col gap-2.5">
+            {recent.map((r) => (
+              <div key={r.id} className="flex items-center gap-2.5">
+                <span className="flex h-[34px] w-[34px] flex-none items-center justify-center rounded-[10px] bg-brand-tint">
+                  <Icon name="cleaning_services" className="text-[17px] text-brand-text" />
+                </span>
+                <div className="flex-1">
+                  <p className="text-[13px] font-bold">{r.service?.title ?? "Job"}</p>
+                  <p className="text-[11px] text-muted-foreground/70">
+                    {r.completed_at
+                      ? new Date(r.completed_at).toLocaleDateString("en-LK", {
+                          weekday: "short",
+                          day: "numeric",
+                          month: "short",
+                        })
+                      : ""}
+                  </p>
+                </div>
+                <span className="text-[13.5px] font-extrabold">{formatLKR(r.seller_net)}</span>
+              </div>
+            ))}
+          </div>
         </div>
       ) : null}
 
