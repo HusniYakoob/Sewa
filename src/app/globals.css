@@ -167,11 +167,53 @@ body {
 .splash-actions {
   animation: sewa-fade-up 0.6s 0.6s both;
 }
+/* General-purpose entrance utilities — transform/opacity only, so they run
+   on the compositor thread and stay smooth even under WebView JS load
+   (Capacitor). Prefer these over ad-hoc animations for new UI. */
+@keyframes sewa-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes sewa-sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.fade-in {
+  animation: sewa-fade-up 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.rise-in {
+  animation: sewa-rise-in 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.sheet-in {
+  animation: sewa-sheet-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+/* Stagger helper: pair with .rise-in on list items, set --sewa-stagger-i per item. */
+.stagger-in {
+  animation: sewa-rise-in 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: calc(var(--sewa-stagger-i, 0) * 45ms);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .splash-word,
   .splash-dot,
   .splash-tag,
-  .splash-actions {
+  .splash-actions,
+  .fade-in,
+  .rise-in,
+  .sheet-in,
+  .stagger-in {
     animation: none;
   }
 }

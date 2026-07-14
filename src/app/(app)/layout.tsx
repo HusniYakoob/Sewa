@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/auth";
 import { BottomNav } from "@/components/nav/bottom-nav";
+import { PageTransition } from "@/components/nav/page-transition";
 
 export default async function AppLayout({
   children,
@@ -15,7 +16,7 @@ export default async function AppLayout({
   return (
     <div className="flex min-h-dvh flex-col">
       <div className="mx-auto w-full max-w-md flex-1 pb-[calc(4rem+env(safe-area-inset-bottom)+1rem)]">
-        {children}
+        <PageTransition>{children}</PageTransition>
       </div>
       <BottomNav context={profile.active_context} />
     </div>
