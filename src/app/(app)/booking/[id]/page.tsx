@@ -42,7 +42,7 @@ export default async function BookingPage({
   const { data } = await supabase
     .from("bookings")
     .select(
-      "id, status, total_charged, seller_net, seller_commission, scheduled_at, duration_hours, location, notes, buyer_id, seller_id, service_id, seller_approved_at, package:service_packages(name), service:services(title), buyer:profiles(full_name, created_at)",
+      "id, status, total_charged, seller_net, seller_commission, scheduled_at, duration_hours, location, notes, buyer_id, seller_id, service_id, seller_approved_at, started_at, arrived_at, package:service_packages(name), service:services(title), buyer:profiles(full_name, phone, created_at)",
     )
     .eq("id", id)
     .maybeSingle();
@@ -61,9 +61,11 @@ export default async function BookingPage({
     seller_id: string;
     service_id: string;
     seller_approved_at: string | null;
+    started_at: string | null;
+    arrived_at: string | null;
     package: { name: string } | null;
     service: { title: string } | null;
-    buyer: { full_name: string; created_at: string } | null;
+    buyer: { full_name: string; phone: string | null; created_at: string } | null;
   } | null;
 
   if (!booking) notFound();
@@ -103,19 +105,19 @@ export default async function BookingPage({
     }
 
     return (
-      <div>
-        <AppHeader title="Job" backHref="/bookings" />
-        <SellerJob
-          bookingId={booking.id}
-          status={booking.status}
-          sellerApprovedAt={booking.seller_approved_at}
-          title={booking.service?.title ?? "Service"}
-          scheduledAt={booking.scheduled_at}
-          location={booking.location}
-          notes={booking.notes}
-          sellerNet={Number(booking.seller_net)}
-        />
-      </div>
+      <SellerJob
+        bookingId={booking.id}
+        status={booking.status}
+        sellerApprovedAt={booking.seller_approved_at}
+        title={booking.service?.title ?? "Service"}
+        scheduledAt={booking.scheduled_at}
+        startedAt={booking.started_at}
+        location={booking.location}
+        notes={booking.notes}
+        sellerNet={Number(booking.seller_net)}
+        buyerName={booking.buyer?.full_name ?? "Customer"}
+        buyerPhone={booking.buyer?.phone ?? null}
+      />
     );
   }
 
