@@ -29,6 +29,23 @@ export default function SettingsPage() {
         <NotificationToggles />
 
         <p className="mb-2.5 mt-[22px] text-[11.5px] font-extrabold tracking-wide text-muted-foreground">
+          SECURITY
+        </p>
+        <Link
+          href="/settings/password"
+          className="flex items-center gap-3.5 rounded-2xl border-[1.5px] border-border bg-surface p-4"
+        >
+          <span className="flex h-[34px] w-[34px] items-center justify-center rounded-[10px] bg-surface-muted">
+            <Icon name="lock" className="text-[19px] text-brand-text" />
+          </span>
+          <div className="flex-1">
+            <p className="text-sm font-bold">Password &amp; security</p>
+            <p className="mt-0.5 text-[11.5px] text-muted-foreground">Change your password</p>
+          </div>
+          <Icon name="chevron_right" className="text-muted-foreground/40" />
+        </Link>
+
+        <p className="mb-2.5 mt-[22px] text-[11.5px] font-extrabold tracking-wide text-muted-foreground">
           LANGUAGE
         </p>
         <div className="flex items-center gap-3.5 rounded-2xl border-[1.5px] border-border bg-surface p-4 opacity-70">
