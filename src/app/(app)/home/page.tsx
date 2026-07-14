@@ -6,6 +6,26 @@ import { Avatar } from "@/components/ui/avatar";
 import { formatLKR } from "@/lib/pricing";
 import type { BookingStatus } from "@/lib/supabase/types";
 
+const GRADIENTS = [
+  ["#834DFB", "#6B2FE0"],
+  ["#F0A868", "#E0453C"],
+  ["#68C2F0", "#3467C9"],
+  ["#7CD98B", "#12A150"],
+  ["#F0C868", "#B8860B"],
+];
+
+const PROMOS = [
+  { icon: "workspace_premium", g1: "#834DFB", g2: "#6B2FE0", title: "Become a Seller", subtitle: "Free to join — start earning today", href: "/become-seller" },
+  { icon: "verified_user", g1: "#F0A868", g2: "#E0453C", title: "Verified, trusted pros", subtitle: "Every seller is NIC-checked", href: "/categories" },
+  { icon: "shield", g1: "#3467C9", g2: "#12A150", title: "Payment protection", subtitle: "Held safe until the job is done", href: "/help" },
+] as const;
+
+function greetingFor(hour: number) {
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
+
 export default async function HomePage() {
   const profile = await getCurrentProfile();
   const supabase = await createClient();
@@ -51,7 +71,7 @@ export default async function HomePage() {
 
   const { data: upRow } = await supabase
     .from("bookings")
-    .select("id, scheduled_at, service:services(title)")
+    .select("id, scheduled_at, seller:seller_profiles(profile:profiles(full_name, avatar_url))")
     .eq("buyer_id", profile?.id ?? "")
     .eq("status", "accepted")
     .gte("scheduled_at", new Date().toISOString())
@@ -61,181 +81,289 @@ export default async function HomePage() {
   const upcoming = upRow as unknown as {
     id: string;
     scheduled_at: string;
-    service: { title: string } | null;
+    seller: { profile: { full_name: string; avatar_url: string | null } | null } | null;
   } | null;
 
-  const { data: topData } = await supabase
+  const { data: gigData } = await supabase
     .from("services")
-    .select("id, title, price, rating, category:categories(name)")
+    .select(
+      "id, title, price, rating, seller:seller_profiles(rating, nic_verified, plan:plans(key), profile:profiles(full_name))",
+    )
     .eq("status", "active")
     .order("rating", { ascending: false })
-    .limit(3);
-  const top = (topData ?? []) as unknown as {
+    .limit(4);
+  const gigs = (gigData ?? []) as unknown as {
     id: string;
     title: string;
     price: number;
     rating: number;
-    category: { name: string } | null;
+    seller: {
+      rating: number;
+      nic_verified: boolean;
+      plan: { key: string } | null;
+      profile: { full_name: string } | null;
+    } | null;
   }[];
 
+  // "Top pros" ranks by the seller's own rating, not the gig's — dedupe by
+  // seller so the same pro doesn't show twice from two of their gigs.
+  const seenSellers = new Set<string>();
+  const topPros = [...gigs]
+    .sort((a, b) => (b.seller?.rating ?? 0) - (a.seller?.rating ?? 0))
+    .filter((g) => {
+      const name = g.seller?.profile?.full_name;
+      if (!name || seenSellers.has(name)) return false;
+      seenSellers.add(name);
+      return true;
+    })
+    .slice(0, 2);
+
+  const hour = new Date().toLocaleString("en-US", { hour: "numeric", hour12: false, timeZone: "Asia/Colombo" });
+
   return (
-    <div>
-      {/* Gradient hero */}
-      <div className="bg-[linear-gradient(135deg,#834dfb,#6b2fe0)] dark:bg-[linear-gradient(135deg,#834dfb,#5b27c9)] relative overflow-hidden rounded-b-[30px] pb-8 text-white">
-        <div className="absolute -right-12 top-2 h-44 w-44 rounded-full bg-white/[.09]" />
-        <div className="absolute right-8 top-24 h-14 w-14 rounded-full bg-accent/90" />
-        <div className="relative px-[22px] pt-4">
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-1.5 rounded-full border border-white/30 bg-white/15 py-2 pl-2.5 pr-3 text-[13px] font-bold">
-              <Icon name="location_on" filled className="text-base" /> Nugegoda
-            </span>
-            <div className="flex items-center gap-2.5">
-              <span className="relative flex h-[38px] w-[38px] items-center justify-center rounded-full border border-white/30 bg-white/15">
-                <Icon name="notifications" className="text-[19px]" />
-                <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full border border-brand bg-accent" />
-              </span>
-              <Link href="/account">
-                <Avatar
-                  avatarUrl={profile?.avatar_url}
-                  name={profile?.full_name}
-                  size="sm"
-                  className="h-[38px] w-[38px] bg-white text-[13px] text-brand"
-                />
-              </Link>
-            </div>
-          </div>
-          <h1 className="mt-5 text-[30px] font-extrabold leading-[1.08] tracking-tight">
-            Let&rsquo;s get it done,
-            <br />
-            <span className="text-accent">{firstName}.</span>
-          </h1>
-          <div className="mt-4 flex gap-2.5">
-            <Link
-              href="/browse"
-              className="flex flex-1 items-center gap-2.5 rounded-[15px] bg-white px-4 py-3.5 shadow-[0_10px_26px_rgba(60,20,120,.28)]"
-            >
-              <Icon name="search" className="text-xl text-brand" />
-              <span className="text-sm text-muted-foreground">
-                Search services or pros
-              </span>
-            </Link>
-            <span className="flex h-[52px] w-[52px] items-center justify-center rounded-[15px] bg-accent shadow-[0_10px_26px_rgba(60,20,120,.28)]">
-              <Icon name="tune" className="text-[23px] text-accent-foreground" />
-            </span>
-          </div>
+    <div className="pb-24">
+      {/* Header */}
+      <div className="flex items-center justify-between px-[22px] pt-3">
+        <span className="flex items-center gap-1.5 rounded-full border border-border bg-surface py-1.5 pl-2.5 pr-3 text-[12.5px] font-bold">
+          <Icon name="location_on" filled className="text-[15px] text-brand-text" /> Nugegoda
+          <Icon name="expand_more" className="text-[15px] text-muted-foreground" />
+        </span>
+        <div className="flex items-center gap-2.5">
+          <span className="relative flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface">
+            <Icon name="notifications" className="text-[18px]" />
+            <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full border border-surface bg-danger" />
+          </span>
+          <Link href="/account">
+            <Avatar
+              avatarUrl={profile?.avatar_url}
+              name={profile?.full_name}
+              size="sm"
+              className="h-9 w-9 text-[12.5px]"
+            />
+          </Link>
         </div>
       </div>
 
-      {/* Active job (overlaps hero) */}
-      {active ? (
-        <div className="-mt-[18px] px-[22px]">
+      <div className="px-[22px] pt-5">
+        <p className="text-[13px] font-bold text-muted-foreground">
+          {greetingFor(Number(hour))}, {firstName}
+        </p>
+        <h1 className="mt-1 text-[26px] font-extrabold leading-[1.15] tracking-tight">
+          What do you need done today?
+        </h1>
+        <Link
+          href="/categories"
+          className="mt-4 flex items-center gap-2.5 rounded-2xl border-[1.5px] border-border bg-surface px-4 py-3.5"
+        >
+          <Icon name="search" className="text-brand-text" />
+          <span className="flex-1 text-sm text-muted-foreground">Search services or pros</span>
+          <Icon name="tune" className="text-lg text-muted-foreground/60" />
+        </Link>
+      </div>
+
+      {/* Promo carousel */}
+      <div className="mt-5 flex gap-3 overflow-x-auto px-[22px] pb-0.5">
+        {PROMOS.map((p) => (
           <Link
-            href={`/booking/${active.id}`}
-            className="flex items-center gap-3 rounded-[20px] bg-[#1B1C2B] p-4 shadow-[0_16px_30px_rgba(27,28,43,.25)]"
+            key={p.title}
+            href={p.href}
+            className="relative flex-none w-[280px] overflow-hidden rounded-[20px] p-4.5"
+            style={{ background: `linear-gradient(135deg, ${p.g1}, ${p.g2})` }}
           >
-            <span className="flex h-[42px] w-[42px] flex-none items-center justify-center rounded-full bg-brand">
-              <Icon name="cleaning_services" filled className="text-xl text-white" />
+            <div className="pointer-events-none absolute -bottom-6 -right-6 h-[100px] w-[100px] rounded-full bg-white/10" />
+            <span className="relative flex h-9 w-9 items-center justify-center rounded-[11px] bg-white/20">
+              <Icon name={p.icon} className="text-lg text-white" />
             </span>
-            <div className="flex-1">
-              <p className="flex items-center gap-2 text-[13.5px] font-bold text-white">
-                {active.service?.title ?? "Service"} in progress
-                <span className="h-1.5 w-1.5 rounded-full bg-[#3DDC84]" />
-              </p>
-              <p className="mt-0.5 text-xs text-[#9A96AB]">Tap to view PINs</p>
-            </div>
-            <Icon name="chevron_right" className="text-[#6E6A7C]" />
+            <p className="relative mt-3 text-[15px] font-extrabold text-white">{p.title}</p>
+            <p className="relative mt-0.5 text-xs text-white/85">{p.subtitle}</p>
           </Link>
-        </div>
+        ))}
+      </div>
+
+      {/* Active job */}
+      {active ? (
+        <Link
+          href={`/booking/${active.id}`}
+          className="mx-[22px] mt-4.5 flex items-center gap-3 rounded-2xl bg-brand-tint p-3.5"
+        >
+          <span className="relative flex h-[34px] w-[34px] flex-none items-center justify-center">
+            <span className="absolute inset-0 animate-ping rounded-full bg-brand/40" />
+            <span className="relative flex h-[34px] w-[34px] items-center justify-center rounded-full bg-brand">
+              <Icon name="cleaning_services" filled className="text-base text-white" />
+            </span>
+          </span>
+          <div className="flex-1">
+            <p className="text-[13px] font-extrabold">{active.service?.title ?? "Job"} in progress</p>
+            <p className="mt-0.5 text-[11.5px] text-muted-foreground">Tap to view PINs</p>
+          </div>
+          <Icon name="chevron_right" className="text-brand-text" />
+        </Link>
       ) : null}
 
-      {/* Categories */}
-      <div className={active ? "px-[22px] pt-1.5" : "px-[22px] pt-5"}>
+      {/* Browse by category */}
+      <div className="mt-5.5 px-[22px]">
         <div className="flex items-baseline justify-between">
-          <h2 className="text-[17px] font-extrabold">Services</h2>
+          <h2 className="text-[16px] font-extrabold">Browse by category</h2>
           <Link href="/categories" className="text-[12.5px] font-extrabold text-brand-text">
             See all
           </Link>
         </div>
-        <div className="mt-3 grid grid-cols-4 gap-3">
-          {categories.map((c) => (
-            <Link
-              key={c.id}
-              href={`/browse?category=${c.slug}`}
-              className="flex flex-col items-center gap-1.5"
-            >
-              <span className="flex h-[62px] w-[62px] items-center justify-center rounded-[20px] bg-brand-tint transition active:scale-95">
-                <Icon name={c.icon ?? "category"} filled className="text-[26px] text-brand-text" />
-              </span>
-              <span className="text-[11px] font-bold text-foreground">{c.name}</span>
-            </Link>
-          ))}
+      </div>
+      <div className="mt-3.5 flex gap-2.5 overflow-x-auto px-[22px] pb-0.5">
+        {categories.map((c) => (
+          <Link
+            key={c.id}
+            href={`/browse?category=${c.slug}`}
+            className="flex flex-none items-center gap-2 rounded-full border border-border bg-surface py-2 pl-2 pr-4"
+          >
+            <span className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-brand-tint">
+              <Icon name={c.icon ?? "category"} filled className="text-[18px] text-brand-text" />
+            </span>
+            <span className="whitespace-nowrap text-[12.5px] font-bold">{c.name}</span>
+          </Link>
+        ))}
+      </div>
+
+      {/* Featured service ads */}
+      <div className="mt-5 px-[22px]">
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-[16px] font-extrabold">Featured service ads</h2>
+          <Link href="/browse" className="text-[12.5px] font-extrabold text-brand-text">
+            See all
+          </Link>
         </div>
       </div>
+      {gigs.length === 0 ? (
+        <p className="mt-3 px-[22px] text-sm text-muted-foreground">
+          New providers are joining. Check back soon.
+        </p>
+      ) : (
+        <div className="mt-3.5 flex gap-3 overflow-x-auto px-[22px] pb-0.5">
+          {gigs.map((g, i) => {
+            const [g1, g2] = GRADIENTS[i % GRADIENTS.length];
+            const isPro = g.seller?.plan?.key && g.seller.plan.key !== "starter";
+            return (
+              <Link
+                key={g.id}
+                href={`/service/${g.id}`}
+                className="flex-none w-[200px] overflow-hidden rounded-[18px] border-[1.5px] border-border bg-surface"
+              >
+                <div
+                  className="relative h-24"
+                  style={{ background: `linear-gradient(135deg, ${g1}, ${g2})` }}
+                >
+                  {isPro ? (
+                    <span className="absolute left-2.5 top-2.5 flex items-center gap-1 rounded-full bg-accent px-2 py-1">
+                      <Icon name="workspace_premium" className="text-[11px] text-[#5B4B00]" />
+                      <span className="text-[9px] font-extrabold tracking-wide text-[#5B4B00]">PRO</span>
+                    </span>
+                  ) : null}
+                </div>
+                <div className="p-3">
+                  <p className="line-clamp-2 h-8 text-[12.5px] font-extrabold leading-tight">{g.title}</p>
+                  <div className="mt-1.5 flex items-center gap-1">
+                    <span className="truncate text-[11.5px] font-bold text-muted-foreground">
+                      {g.seller?.profile?.full_name ?? "Sewa pro"}
+                    </span>
+                    {g.seller?.nic_verified ? (
+                      <Icon name="verified" filled className="flex-none text-xs text-brand-text" />
+                    ) : null}
+                  </div>
+                  <div className="mt-1.5 flex items-center justify-between">
+                    <span className="flex items-center gap-1">
+                      <Icon name="star" filled className="text-[13px] text-[#EAB308]" />
+                      <span className="text-[11.5px] font-extrabold">{(g.rating ?? 0).toFixed(1)}</span>
+                    </span>
+                    <span className="text-xs font-extrabold text-brand-text">{formatLKR(g.price)}</span>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      )}
 
       {/* Upcoming */}
       {upcoming ? (
-        <div className="px-[22px] pt-6">
-          <h2 className="text-[17px] font-extrabold">Upcoming</h2>
+        <div className="mt-5.5 px-[22px]">
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-[16px] font-extrabold">Upcoming</h2>
+            <Link href="/bookings" className="text-[12.5px] font-extrabold text-brand-text">
+              See all
+            </Link>
+          </div>
           <Link
             href={`/booking/${upcoming.id}`}
-            className="mt-3 flex items-center gap-3 rounded-[20px] bg-surface p-4 shadow-[0_6px_20px_-12px_rgba(131,77,251,.4)]"
+            className="mt-3 flex items-center gap-3 border-b border-border pb-4"
           >
-            <span className="h-[50px] w-[50px] flex-none rounded-[15px] bg-brand-tint" />
+            <Avatar
+              avatarUrl={upcoming.seller?.profile?.avatar_url}
+              name={upcoming.seller?.profile?.full_name}
+              size="md"
+              className="h-[46px] w-[46px] flex-none rounded-2xl"
+            />
             <div className="flex-1">
-              <p className="text-[14.5px] font-extrabold">
-                {upcoming.service?.title ?? "Service"}
+              <p className="flex items-center gap-1.5 text-sm font-extrabold">
+                {upcoming.seller?.profile?.full_name ?? "Sewa pro"}
+                <Icon name="verified" filled className="text-sm text-brand-text" />
               </p>
-              <p className="mt-1 flex items-center gap-1 text-[11.5px] font-semibold text-muted-foreground">
-                <Icon name="calendar_month" className="text-sm" />
-                {new Date(upcoming.scheduled_at).toLocaleString("en-LK", {
-                  weekday: "short",
-                  day: "numeric",
-                  month: "short",
-                  hour: "numeric",
-                  minute: "2-digit",
-                })}
-              </p>
+              <div className="mt-1 flex items-center gap-2.5 text-[11.5px] text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <Icon name="calendar_month" className="text-sm" />
+                  {new Date(upcoming.scheduled_at).toLocaleDateString("en-LK", {
+                    weekday: "short",
+                    day: "numeric",
+                    month: "short",
+                  })}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Icon name="schedule" className="text-sm" />
+                  {new Date(upcoming.scheduled_at).toLocaleTimeString("en-LK", {
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })}
+                </span>
+              </div>
             </div>
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-tint">
-              <Icon name="chevron_right" className="text-brand-text" />
-            </span>
+            <Icon name="chevron_right" className="text-muted-foreground/40" />
           </Link>
         </div>
       ) : null}
 
-      {/* Top rated */}
-      <div className="px-[22px] pb-24 pt-6">
-        <h2 className="text-[17px] font-extrabold">Top rated near you</h2>
-        <div className="mt-3 flex flex-col gap-2.5">
-          {top.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              New providers are joining. Check back soon.
-            </p>
-          ) : (
-            top.map((s) => (
-              <Link
-                key={s.id}
-                href={`/service/${s.id}`}
-                className="flex items-center gap-3 rounded-2xl bg-surface p-3.5 shadow-[0_4px_14px_-8px_rgba(131,77,251,.4)]"
-              >
-                <span className="h-12 w-12 flex-none rounded-[14px] bg-brand-tint" />
-                <div className="flex-1">
-                  <p className="text-sm font-extrabold">{s.title}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {s.category?.name} · {formatLKR(s.price)}
-                  </p>
-                </div>
-                <span className="flex items-center gap-1 rounded-full bg-brand-tint px-2.5 py-1.5">
-                  <Icon name="star" filled className="text-sm text-[#EAB308]" />
-                  <span className="text-xs font-extrabold">
-                    {(s.rating ?? 0).toFixed(1)}
+      {/* Top pros near you */}
+      {topPros.length > 0 ? (
+        <div className="mt-5 px-[22px]">
+          <h2 className="text-[16px] font-extrabold">Top pros near you</h2>
+          <div className="mt-3 flex flex-col gap-2.5">
+            {topPros.map((g, i) => {
+              const [g1] = GRADIENTS[i % GRADIENTS.length];
+              return (
+                <Link
+                  key={g.id}
+                  href={`/service/${g.id}`}
+                  className="flex items-center gap-3 rounded-2xl bg-surface p-3 shadow-[0_4px_14px_-8px_rgba(131,77,251,.15)]"
+                >
+                  <span
+                    className="h-12 w-12 flex-none rounded-2xl"
+                    style={{ background: g1 }}
+                  />
+                  <div className="flex-1">
+                    <p className="flex items-center gap-1 text-sm font-extrabold">
+                      {g.seller?.profile?.full_name ?? "Sewa pro"}
+                      <Icon name="verified" filled className="text-sm text-brand-text" />
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">{g.title}</p>
+                  </div>
+                  <span className="flex items-center gap-1 rounded-full bg-background px-2.5 py-1.5">
+                    <Icon name="star" filled className="text-sm text-[#EAB308]" />
+                    <span className="text-xs font-extrabold">{(g.seller?.rating ?? 0).toFixed(1)}</span>
                   </span>
-                </span>
-              </Link>
-            ))
-          )}
+                </Link>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      ) : null}
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 
 const BUYER_MENU = [
   { href: "/bookings", icon: "event", label: "My bookings" },
+  { href: "/saved", icon: "favorite", label: "Saved & Favorites" },
   { href: "/help", icon: "help", label: "Help & support" },
 ];
 

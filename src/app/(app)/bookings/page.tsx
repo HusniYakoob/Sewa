@@ -13,6 +13,7 @@ type BookingRow = {
   status: BookingStatus;
   scheduled_at: string;
   total_charged: number;
+  seller_approved_at: string | null;
   service: { title: string } | null;
   seller: { profile: { full_name: string } | null } | null;
   buyer: { full_name: string } | null;
@@ -34,7 +35,7 @@ export default async function BookingsPage({
   const { data } = await supabase
     .from("bookings")
     .select(
-      "id, status, scheduled_at, total_charged, service:services(title), seller:seller_profiles(profile:profiles(full_name)), buyer:profiles(full_name)",
+      "id, status, scheduled_at, total_charged, seller_approved_at, service:services(title), seller:seller_profiles(profile:profiles(full_name)), buyer:profiles(full_name)",
     )
     .order("scheduled_at", { ascending: false });
 
@@ -116,7 +117,11 @@ export default async function BookingsPage({
               )}
             >
               <div className="flex items-center gap-2">
-                <StatusChip status={b.status} inverted={b.status === "in_progress"} />
+                <StatusChip
+                  status={b.status}
+                  approved={Boolean(b.seller_approved_at)}
+                  inverted={b.status === "in_progress"}
+                />
                 <div className="flex-1" />
                 <span
                   className={cn(
@@ -157,6 +162,14 @@ export default async function BookingsPage({
                   className={b.status === "in_progress" ? "text-white/40" : "text-muted-foreground"}
                 />
               </div>
+              {!isCompleted && !isSeller && b.status === "pending" && b.seller_approved_at ? (
+                <Link
+                  href={`/pay/${b.id}`}
+                  className="mt-3.5 flex items-center justify-center gap-1.5 rounded-xl bg-brand py-2.5 text-center text-xs font-extrabold text-white"
+                >
+                  <Icon name="lock" className="text-sm" /> Pay now
+                </Link>
+              ) : null}
               {!isCompleted && !isSeller && b.status === "accepted" ? (
                 <div className="mt-3.5 flex gap-2">
                   <Link
@@ -188,9 +201,19 @@ export default async function BookingsPage({
   );
 }
 
-function StatusChip({ status, inverted }: { status: BookingStatus; inverted: boolean }) {
+function StatusChip({
+  status,
+  approved,
+  inverted,
+}: {
+  status: BookingStatus;
+  approved: boolean;
+  inverted: boolean;
+}) {
   const map: Partial<Record<BookingStatus, { label: string; icon: string }>> = {
-    pending: { label: "AWAITING PAYMENT", icon: "schedule" },
+    pending: approved
+      ? { label: "APPROVED — PAY NOW", icon: "lock_open" }
+      : { label: "AWAITING SELLER", icon: "schedule_send" },
     accepted: { label: "IN ESCROW", icon: "lock" },
     arrived: { label: "PROVIDER ARRIVED", icon: "location_on" },
     in_progress: { label: "IN PROGRESS", icon: "bolt" },

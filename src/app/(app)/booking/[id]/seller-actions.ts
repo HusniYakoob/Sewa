@@ -46,6 +46,55 @@ async function requireSellerBooking(bookingId: string) {
   return { admin, booking } as const;
 }
 
+/**
+ * Seller confirms a pending request. This does NOT charge the buyer — it
+ * just unlocks the buyer's "pay now" step (see book/[id]/actions.ts and
+ * booking/[id]/page.tsx). Actual payment is still captured by the PayHere
+ * webhook, same as before.
+ */
+export async function approveBookingRequest(
+  _prev: JobState,
+  formData: FormData,
+): Promise<JobState> {
+  const bookingId = String(formData.get("booking_id") ?? "");
+  const res = await requireSellerBooking(bookingId);
+  if ("error" in res) return { error: res.error };
+  const { admin, booking } = res;
+
+  if (booking.status !== "pending" || booking.seller_approved_at) {
+    return { error: "This request has already been actioned." };
+  }
+  await admin
+    .from("bookings")
+    .update({ seller_approved_at: new Date().toISOString() })
+    .eq("id", bookingId);
+  revalidatePath(`/booking/${bookingId}`);
+  revalidatePath("/bookings");
+  return { ok: true };
+}
+
+/** Seller declines a pending request. No charge ever happened, so this just closes it. */
+export async function declineBookingRequest(
+  _prev: JobState,
+  formData: FormData,
+): Promise<JobState> {
+  const bookingId = String(formData.get("booking_id") ?? "");
+  const res = await requireSellerBooking(bookingId);
+  if ("error" in res) return { error: res.error };
+  const { admin, booking } = res;
+
+  if (booking.status !== "pending" || booking.seller_approved_at) {
+    return { error: "This request has already been actioned." };
+  }
+  await admin
+    .from("bookings")
+    .update({ status: "declined", cancelled_at: new Date().toISOString(), cancelled_by: "seller" })
+    .eq("id", bookingId);
+  revalidatePath(`/booking/${bookingId}`);
+  revalidatePath("/bookings");
+  return { ok: true };
+}
+
 /** Seller marks they have arrived on site (enables the full cancellation cut). */
 export async function markArrived(
   _prev: JobState,

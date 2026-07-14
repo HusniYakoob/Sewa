@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentProfile } from "@/lib/auth";
 import { Icon } from "@/components/ui/icon";
+import { SaveButton } from "@/components/save-button";
 import { PackagePicker, type PackageOption } from "./package-picker";
 
 type ServiceDetail = {
@@ -46,6 +48,17 @@ export default async function ServiceDetailPage({
 
   if (!data) notFound();
   const s = data as unknown as ServiceDetail;
+
+  const profile = await getCurrentProfile();
+  const { data: savedRow } = profile
+    ? await supabase
+        .from("saved_services")
+        .select("service_id")
+        .eq("buyer_id", profile.id)
+        .eq("service_id", id)
+        .maybeSingle()
+    : { data: null };
+  const isSaved = Boolean(savedRow);
 
   const { data: pkgData } = await supabase
     .from("service_packages")
@@ -95,9 +108,7 @@ export default async function ServiceDetailPage({
             <span className="flex h-[38px] w-[38px] items-center justify-center rounded-full bg-white/85">
               <Icon name="ios_share" className="text-foreground" />
             </span>
-            <span className="flex h-[38px] w-[38px] items-center justify-center rounded-full bg-white/85">
-              <Icon name="favorite_border" className="text-foreground" />
-            </span>
+            <SaveButton serviceId={s.id} initialSaved={isSaved} variant="hero" />
           </div>
         </div>
       </div>

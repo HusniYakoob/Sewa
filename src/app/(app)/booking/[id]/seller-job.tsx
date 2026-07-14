@@ -5,6 +5,8 @@ import {
   markArrived,
   verifyStartPin,
   verifyEndPin,
+  approveBookingRequest,
+  declineBookingRequest,
   type JobState,
 } from "./seller-actions";
 import { CancelForm } from "./cancel-form";
@@ -18,6 +20,7 @@ import type { BookingStatus } from "@/lib/supabase/types";
 export function SellerJob({
   bookingId,
   status,
+  sellerApprovedAt,
   title,
   scheduledAt,
   location,
@@ -26,6 +29,7 @@ export function SellerJob({
 }: {
   bookingId: string;
   status: BookingStatus;
+  sellerApprovedAt: string | null;
   title: string;
   scheduledAt: string;
   location: string | null;
@@ -52,8 +56,12 @@ export function SellerJob({
         </div>
       </Card>
 
-      {status === "pending" ? (
-        <Info icon="schedule" text="Waiting for the customer to pay. You will see this as confirmed once payment is done." />
+      {status === "pending" && !sellerApprovedAt ? (
+        <RequestDecisionForm bookingId={bookingId} />
+      ) : null}
+
+      {status === "pending" && sellerApprovedAt ? (
+        <Info icon="schedule" text="Waiting for the customer to pay. You'll see this as confirmed once payment is done." />
       ) : null}
 
       {status === "accepted" ? (
@@ -106,6 +114,42 @@ function Info({ icon, text }: { icon: string; text: string }) {
     <Card className="flex items-center gap-2">
       <Icon name={icon} className="text-muted-foreground" />
       <p className="text-sm text-muted-foreground">{text}</p>
+    </Card>
+  );
+}
+
+function RequestDecisionForm({ bookingId }: { bookingId: string }) {
+  const [approveState, approveAction, approving] = useActionState<JobState, FormData>(
+    approveBookingRequest,
+    {},
+  );
+  const [declineState, declineAction, declining] = useActionState<JobState, FormData>(
+    declineBookingRequest,
+    {},
+  );
+
+  return (
+    <Card className="flex flex-col gap-3">
+      <p className="flex items-center gap-2 text-sm font-semibold">
+        <Icon name="schedule_send" className="text-brand-text" />
+        New booking request — no charge to the customer until you decide.
+      </p>
+      {approveState.error ? <ErrorLine text={approveState.error} /> : null}
+      {declineState.error ? <ErrorLine text={declineState.error} /> : null}
+      <div className="flex gap-2.5">
+        <form action={declineAction} className="flex-1">
+          <input type="hidden" name="booking_id" value={bookingId} />
+          <Button type="submit" variant="ghost" block disabled={declining || approving} className="text-danger">
+            {declining ? "Declining…" : "Decline"}
+          </Button>
+        </form>
+        <form action={approveAction} className="flex-1">
+          <input type="hidden" name="booking_id" value={bookingId} />
+          <Button type="submit" block disabled={declining || approving}>
+            {approving ? "Confirming…" : "Confirm"}
+          </Button>
+        </form>
+      </div>
     </Card>
   );
 }

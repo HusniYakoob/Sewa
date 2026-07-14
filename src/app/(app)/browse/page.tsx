@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentProfile } from "@/lib/auth";
 import { Icon } from "@/components/ui/icon";
 import { EmptyState } from "@/components/ui/empty-state";
+import { buttonVariants } from "@/components/ui/button";
+import { SaveButton } from "@/components/save-button";
 import { formatLKR } from "@/lib/pricing";
 
 type BrowseService = {
@@ -71,6 +74,12 @@ export default async function BrowsePage({
   const { data } = await query.order("rating", { ascending: false });
   const services = (data ?? []) as unknown as BrowseService[];
 
+  const profile = await getCurrentProfile();
+  const { data: savedRows } = profile
+    ? await supabase.from("saved_services").select("service_id").eq("buyer_id", profile.id)
+    : { data: null };
+  const savedIds = new Set((savedRows ?? []).map((r) => r.service_id));
+
   return (
     <div>
       <div className="flex items-center gap-3.5 px-[22px] pt-3">
@@ -113,8 +122,13 @@ export default async function BrowsePage({
         {services.length === 0 ? (
           <EmptyState
             icon="search_off"
-            title="No gigs match your search"
-            description="Try a different category, or check back soon."
+            title="No pros nearby right now"
+            description="Try a wider area or a different category."
+            action={
+              <Link href="/categories" className={buttonVariants({ size: "sm" })}>
+                Search a wider area
+              </Link>
+            }
           />
         ) : (
           <div className="flex flex-col gap-3.5">
@@ -139,6 +153,9 @@ export default async function BrowsePage({
                         </span>
                       </span>
                     ) : null}
+                    <span className="absolute right-2.5 top-2.5">
+                      <SaveButton serviceId={s.id} initialSaved={savedIds.has(s.id)} />
+                    </span>
                   </div>
                   <div className="p-3.5">
                     <div className="flex items-center gap-2">

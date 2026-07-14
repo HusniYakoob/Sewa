@@ -8,7 +8,11 @@ export interface BookingState {
   error?: string;
 }
 
-/** Create a booking (status pending) from a chosen package, then send the buyer to pay. */
+/**
+ * Create a booking request (status pending, no charge yet) from a chosen
+ * package. The seller must approve it before the buyer can pay — see
+ * seller-actions.ts::approveBookingRequest.
+ */
 export async function createBooking(
   _prev: BookingState,
   formData: FormData,
@@ -85,5 +89,5 @@ export async function createBooking(
     .single();
 
   if (error) return { error: error.message };
-  redirect(`/pay/${(booking as { id: string }).id}`);
+  redirect(`/booking/${(booking as { id: string }).id}/requested`);
 }

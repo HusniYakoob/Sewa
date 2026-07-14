@@ -190,6 +190,13 @@ export interface Booking extends Timestamps {
   reschedule_proposed_at: string | null;
   reschedule_requested_by: Actor | null;
   reschedule_note: string | null;
+  seller_approved_at: string | null;
+}
+
+export interface SavedService {
+  buyer_id: string;
+  service_id: string;
+  created_at: string;
 }
 
 export interface BookingPins {
@@ -388,6 +395,7 @@ export interface Database {
       blocks: Table<Block>;
       reports: Table<Report>;
       plan_purchases: Table<PlanPurchase>;
+      saved_services: Table<SavedService>;
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

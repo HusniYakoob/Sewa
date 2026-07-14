@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AppHeader } from "@/components/nav/app-header";
 import { Icon } from "@/components/ui/icon";
@@ -13,7 +13,7 @@ import { formatLKR, cancellationFee } from "@/lib/pricing";
 import type { BookingStatus } from "@/lib/supabase/types";
 
 const STATUS_LABEL: Record<BookingStatus, string> = {
-  pending: "AWAITING PAYMENT",
+  pending: "AWAITING SELLER",
   accepted: "CONFIRMED",
   declined: "DECLINED",
   arrived: "PROVIDER ARRIVED",
@@ -40,7 +40,7 @@ export default async function BookingPage({
   const { data } = await supabase
     .from("bookings")
     .select(
-      "id, status, total_charged, seller_net, scheduled_at, duration_hours, location, notes, buyer_id, seller_id, service_id, service:services(title)",
+      "id, status, total_charged, seller_net, scheduled_at, duration_hours, location, notes, buyer_id, seller_id, service_id, seller_approved_at, service:services(title)",
     )
     .eq("id", id)
     .maybeSingle();
@@ -57,6 +57,7 @@ export default async function BookingPage({
     buyer_id: string;
     seller_id: string;
     service_id: string;
+    seller_approved_at: string | null;
     service: { title: string } | null;
   } | null;
 
@@ -70,6 +71,7 @@ export default async function BookingPage({
         <SellerJob
           bookingId={booking.id}
           status={booking.status}
+          sellerApprovedAt={booking.seller_approved_at}
           title={booking.service?.title ?? "Service"}
           scheduledAt={booking.scheduled_at}
           location={booking.location}
@@ -78,6 +80,11 @@ export default async function BookingPage({
         />
       </div>
     );
+  }
+
+  // Buyer view: an unapproved request still belongs on the "waiting" screen.
+  if (booking.status === "pending" && !booking.seller_approved_at) {
+    redirect(`/booking/${id}/requested`);
   }
 
   // Buyer view.

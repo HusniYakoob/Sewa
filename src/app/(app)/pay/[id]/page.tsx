@@ -25,7 +25,7 @@ export default async function PayPage({
   const { data } = await supabase
     .from("bookings")
     .select(
-      "id, status, scheduled_at, location, service_amount, buyer_fee, total_charged, buyer_id, service:services(title), seller:seller_profiles(rating, total_reviews, total_bookings, profile:profiles(full_name))",
+      "id, status, scheduled_at, location, service_amount, buyer_fee, total_charged, buyer_id, seller_approved_at, service:services(title), seller:seller_profiles(rating, total_reviews, total_bookings, profile:profiles(full_name))",
     )
     .eq("id", id)
     .maybeSingle();
@@ -39,6 +39,7 @@ export default async function PayPage({
     buyer_fee: number;
     total_charged: number;
     buyer_id: string;
+    seller_approved_at: string | null;
     service: { title: string } | null;
     seller: {
       rating: number;
@@ -50,6 +51,8 @@ export default async function PayPage({
 
   if (!booking) notFound();
   if (booking.status !== "pending") redirect(`/booking/${id}`);
+  // Not yet approved by the seller — nothing to pay for yet.
+  if (!booking.seller_approved_at) redirect(`/booking/${id}/requested`);
 
   const { merchantId, checkoutUrl, appUrl, configured } = payhereEnv();
   const amount = Number(booking.total_charged);
