@@ -54,13 +54,28 @@ export default async function ServicesPage() {
         ) : null}
       </div>
 
-      <div className="mx-[22px] mt-3.5 flex items-center justify-between rounded-2xl bg-brand-tint px-4 py-3">
-        <span className="text-xs font-bold text-brand-text">
-          {services.length} of {limit} ads used · {isFree ? "Free plan" : (planData?.key ?? "Pro")}
-        </span>
+      <div className="relative mx-[22px] mt-3.5 overflow-hidden rounded-2xl bg-[linear-gradient(135deg,#834dfb,#6b2fe0)] px-4 py-4">
+        <div className="pointer-events-none absolute -right-5 -top-5 h-[90px] w-[90px] rounded-full bg-white/10" />
+        <div className="relative flex items-center justify-between">
+          <span className="text-[13.5px] font-extrabold text-white">
+            {services.length} of {limit} ads used
+          </span>
+          <span className="rounded-full bg-black/20 px-2.5 py-1 text-[10px] font-extrabold text-accent">
+            {isFree ? "Free plan" : (planData?.key ?? "Pro")}
+          </span>
+        </div>
+        <div className="relative mt-2.5 h-[7px] overflow-hidden rounded-full bg-white/25">
+          <div
+            className="h-full rounded-full bg-accent"
+            style={{ width: `${Math.min(100, (services.length / limit) * 100)}%` }}
+          />
+        </div>
         {isFree ? (
-          <Link href="/plans" className="text-xs font-extrabold text-brand-text underline">
-            Upgrade to Pro
+          <Link
+            href="/plans"
+            className="relative mt-2.5 inline-block text-xs font-extrabold text-white underline"
+          >
+            Upgrade to Pro — up to 10 ads →
           </Link>
         ) : null}
       </div>
