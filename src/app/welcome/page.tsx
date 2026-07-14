@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Icon } from "@/components/ui/icon";
+import { signInWithGoogle } from "@/app/(auth)/actions";
+import { GoogleButton, AuthDivider } from "@/app/(auth)/parts";
 
 export default function WelcomePage() {
   return (
@@ -49,18 +51,15 @@ export default function WelcomePage() {
       <div className="flex flex-1 flex-col px-6 pb-8 pt-6">
         <div className="flex-1" />
         <Link
-          href="/phone"
-          className="flex items-center justify-center gap-2 rounded-2xl bg-brand py-4 text-[15.5px] font-extrabold text-white shadow-[0_12px_28px_rgba(131,77,251,.3)] transition active:scale-[.98]"
+          href="/login"
+          className="flex items-center justify-center rounded-2xl bg-brand py-4 text-[15.5px] font-extrabold text-white shadow-[0_12px_28px_rgba(131,77,251,.3)] transition active:scale-[.98]"
         >
-          <Icon name="smartphone" className="text-xl" />
-          Continue with phone
+          Continue with Email
         </Link>
-        <Link
-          href="/browse"
-          className="mt-3.5 text-center text-sm font-bold text-brand-text"
-        >
-          Browse services first
-        </Link>
+        <AuthDivider />
+        <form action={signInWithGoogle}>
+          <GoogleButton>Continue with Google</GoogleButton>
+        </form>
         <p className="mt-5 text-center text-[11.5px] leading-relaxed text-muted-foreground">
           By continuing you agree to Sewa&rsquo;s
           <br />

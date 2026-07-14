@@ -24,7 +24,7 @@ export async function requestPasswordReset(
     redirectTo: `${SITE}/auth/callback?next=/reset-password`,
   });
   if (error) return { error: error.message };
-  return { sent: true };
+  redirect(`/forgot-password/sent?email=${encodeURIComponent(email)}`);
 }
 
 /** Set a new password (called with an active recovery session). */
@@ -33,8 +33,12 @@ export async function updatePassword(
   formData: FormData,
 ): Promise<AuthState> {
   const password = String(formData.get("password") ?? "");
+  const confirmPassword = String(formData.get("confirm_password") ?? "");
   if (password.length < 8) {
     return { error: "Password must be at least 8 characters." };
+  }
+  if (password !== confirmPassword) {
+    return { error: "Passwords do not match." };
   }
   const supabase = await createClient();
   const {
@@ -68,9 +72,10 @@ export async function signIn(
 }
 
 /**
- * Sign up as a buyer or seller. Role, name and phone are stored in auth
- * metadata; the handle_new_user trigger creates the profile (and a
- * seller_profiles row for sellers).
+ * Sign up with email + password. No role is collected here — the
+ * handle_new_user trigger leaves onboarding_completed=false when no role is
+ * in the auth metadata, so every new email account lands on /choose-role
+ * just like a phone signup would.
  */
 export async function signUp(
   _prev: AuthState,
@@ -78,38 +83,20 @@ export async function signUp(
 ): Promise<AuthState> {
   const fullName = String(formData.get("full_name") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim();
-  const phone = String(formData.get("phone") ?? "").trim();
   const password = String(formData.get("password") ?? "");
-  const confirmPassword = String(formData.get("confirm_password") ?? "");
-  const role = String(formData.get("role") ?? "buyer") as UserRole;
 
-  if (!fullName || !email || !phone || !password) {
-    return { error: "Name, email, phone and password are required." };
+  if (!fullName || !email || !password) {
+    return { error: "Name, email and password are required." };
   }
   if (password.length < 8) {
     return { error: "Password must be at least 8 characters." };
   }
-  if (password !== confirmPassword) {
-    return { error: "Passwords do not match." };
-  }
-  if (role !== "buyer" && role !== "seller") {
-    return { error: "Choose an account type." };
-  }
 
   const supabase = await createClient();
-
-  // One account per phone number (normalized). Friendly check before signup.
-  if (phone) {
-    const { data: inUse } = await supabase.rpc("phone_in_use", { p: phone });
-    if (inUse === true) {
-      return { error: "This phone number is already registered." };
-    }
-  }
-
   const { error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { full_name: fullName, phone, role } },
+    options: { data: { full_name: fullName } },
   });
   if (error) return { error: error.message };
 
@@ -134,36 +121,6 @@ export async function signInWithGoogle(): Promise<void> {
     redirect("/login?error=google");
   }
   redirect(data.url);
-}
-
-/** Email a one-time code, then go to the OTP screen. */
-export async function sendEmailCode(
-  _prev: AuthState,
-  formData: FormData,
-): Promise<AuthState> {
-  const email = String(formData.get("email") ?? "").trim();
-  if (!email) return { error: "Enter your email." };
-  const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: { shouldCreateUser: false },
-  });
-  if (error) return { error: error.message };
-  redirect(`/verify-otp?email=${encodeURIComponent(email)}`);
-}
-
-/** Verify the 6-digit email code and sign in. */
-export async function verifyEmailCode(
-  _prev: AuthState,
-  formData: FormData,
-): Promise<AuthState> {
-  const email = String(formData.get("email") ?? "").trim();
-  const token = String(formData.get("token") ?? "").trim();
-  if (token.length < 6) return { error: "Enter the 6-digit code." };
-  const supabase = await createClient();
-  const { error } = await supabase.auth.verifyOtp({ email, token, type: "email" });
-  if (error) return { error: error.message };
-  redirect("/home");
 }
 
 /**

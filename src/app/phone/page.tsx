@@ -30,7 +30,7 @@ export default function PhonePage() {
     <main className="flex min-h-dvh flex-col bg-background">
       <div className="px-[22px] pt-3">
         <Link
-          href="/welcome"
+          href="/login"
           aria-label="Back"
           className="flex h-[42px] w-[42px] items-center justify-center rounded-full border border-border bg-surface"
         >
