@@ -104,6 +104,22 @@ export default async function BookingPage({
       );
     }
 
+    let review: { rating: number; comment: string | null } | null = null;
+    let walletStatus: string | null = null;
+    if (booking.status === "completed") {
+      const [{ data: reviewRow }, { data: walletRow }] = await Promise.all([
+        supabase.from("reviews").select("rating, comment").eq("booking_id", id).maybeSingle(),
+        supabase
+          .from("wallet_entries")
+          .select("status")
+          .eq("booking_id", id)
+          .eq("type", "earning")
+          .maybeSingle(),
+      ]);
+      review = reviewRow;
+      walletStatus = walletRow?.status ?? null;
+    }
+
     return (
       <SellerJob
         bookingId={booking.id}
@@ -114,9 +130,13 @@ export default async function BookingPage({
         startedAt={booking.started_at}
         location={booking.location}
         notes={booking.notes}
+        totalCharged={Number(booking.total_charged)}
+        sellerCommission={Number(booking.seller_commission)}
         sellerNet={Number(booking.seller_net)}
         buyerName={booking.buyer?.full_name ?? "Customer"}
         buyerPhone={booking.buyer?.phone ?? null}
+        review={review}
+        walletStatus={walletStatus}
       />
     );
   }

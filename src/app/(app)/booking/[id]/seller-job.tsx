@@ -22,9 +22,13 @@ export function SellerJob({
   startedAt,
   location,
   notes,
+  totalCharged,
+  sellerCommission,
   sellerNet,
   buyerName,
   buyerPhone,
+  review,
+  walletStatus,
 }: {
   bookingId: string;
   status: BookingStatus;
@@ -34,12 +38,33 @@ export function SellerJob({
   startedAt: string | null;
   location: string | null;
   notes: string | null;
+  totalCharged?: number;
+  sellerCommission?: number;
   sellerNet: number;
   buyerName: string;
   buyerPhone: string | null;
+  review?: { rating: number; comment: string | null } | null;
+  walletStatus?: string | null;
 }) {
   const buyerFirstName = buyerName.split(" ")[0];
   const showBuyerCard = ["accepted", "arrived", "in_progress"].includes(status);
+
+  if (status === "completed") {
+    return (
+      <CompletedJob
+        bookingId={bookingId}
+        title={title}
+        scheduledAt={scheduledAt}
+        location={location}
+        buyerName={buyerName}
+        totalCharged={totalCharged ?? 0}
+        sellerCommission={sellerCommission ?? 0}
+        sellerNet={sellerNet}
+        review={review ?? null}
+        walletStatus={walletStatus ?? null}
+      />
+    );
+  }
 
   return (
     <div className="flex min-h-dvh flex-col px-[22px] pt-3">
@@ -150,15 +175,6 @@ export function SellerJob({
               />
             </div>
           </>
-        ) : null}
-
-        {status === "completed" ? (
-          <div className="mt-4 flex items-center gap-2 rounded-2xl border-[1.5px] border-success/30 bg-success/5 p-4">
-            <Icon name="check_circle" filled className="text-2xl text-success" />
-            <p className="text-sm font-bold">
-              Completed. {formatLKR(sellerNet)} added to your held balance.
-            </p>
-          </div>
         ) : null}
 
         {status === "cancelled" || status === "declined" ? (
@@ -307,5 +323,131 @@ function ErrorLine({ text }: { text: string }) {
       <Icon name="error" className="text-base" />
       {text}
     </p>
+  );
+}
+
+function CompletedJob({
+  bookingId,
+  title,
+  scheduledAt,
+  location,
+  buyerName,
+  totalCharged,
+  sellerCommission,
+  sellerNet,
+  review,
+  walletStatus,
+}: {
+  bookingId: string;
+  title: string;
+  scheduledAt: string;
+  location: string | null;
+  buyerName: string;
+  totalCharged: number;
+  sellerCommission: number;
+  sellerNet: number;
+  review: { rating: number; comment: string | null } | null;
+  walletStatus: string | null;
+}) {
+  const ref = `SW-${bookingId.slice(0, 5).toUpperCase()}`;
+  const badge =
+    walletStatus === "withdrawn"
+      ? { label: "PAID OUT", sub: "Paid out to your bank account" }
+      : walletStatus === "available"
+        ? { label: "AVAILABLE", sub: "Cleared and ready to withdraw" }
+        : { label: "ON HOLD", sub: "Releases after the review window" };
+
+  return (
+    <div className="pb-24">
+      <div className="flex items-center gap-3.5 px-[22px] pt-3">
+        <Link
+          href="/bookings"
+          aria-label="Back"
+          className="flex h-[42px] w-[42px] items-center justify-center rounded-full border border-border bg-surface"
+        >
+          <Icon name="arrow_back" />
+        </Link>
+        <p className="flex-1 text-[17px] font-extrabold">Job details</p>
+        <span className="flex items-center gap-1.5 rounded-full bg-success/10 px-3 py-1.5">
+          <Icon name="check_circle" filled className="text-sm text-success" />
+          <span className="text-[11px] font-extrabold text-success">{badge.label}</span>
+        </span>
+      </div>
+
+      <div className="px-[22px] pt-5 text-center">
+        <p className="text-xs font-bold text-muted-foreground">You earned</p>
+        <p className="mt-0.5 text-[36px] font-extrabold leading-none tracking-tight">
+          {formatLKR(sellerNet)}
+        </p>
+        <p className="mt-1.5 text-[11.5px] text-muted-foreground">{badge.sub}</p>
+      </div>
+
+      <div className="mx-[22px] mt-5 rounded-[20px] border-[1.5px] border-border bg-surface p-4">
+        <div className="flex items-center gap-3">
+          <span className="h-[46px] w-[46px] flex-none rounded-2xl bg-brand-tint" />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[15px] font-extrabold">{title}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {buyerName} · #{ref}
+            </p>
+          </div>
+        </div>
+        <div className="my-3.5 h-px bg-border" />
+        <div className="flex flex-col gap-2">
+          <p className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Icon name="calendar_month" className="text-base" />
+            {new Date(scheduledAt).toLocaleString("en-LK", { dateStyle: "medium", timeStyle: "short" })}
+          </p>
+          {location ? (
+            <p className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Icon name="location_on" className="text-base" />
+              {location}
+            </p>
+          ) : null}
+        </div>
+      </div>
+
+      {review ? (
+        <div className="mx-[22px] mt-3 flex items-center gap-3 rounded-2xl bg-brand-tint p-4">
+          <div className="flex gap-0.5">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <Icon
+                key={n}
+                name="star"
+                filled={n <= review.rating}
+                className={n <= review.rating ? "text-lg text-accent" : "text-lg text-accent/30"}
+              />
+            ))}
+          </div>
+          <div className="flex-1">
+            {review.comment ? (
+              <p className="text-xs italic">&ldquo;{review.comment}&rdquo;</p>
+            ) : null}
+            <p className="mt-0.5 text-[10.5px] font-bold text-brand-text">
+              — {buyerName.split(" ")[0]}
+            </p>
+          </div>
+        </div>
+      ) : null}
+
+      <p className="mb-2.5 mt-5 px-[22px] text-[11px] font-extrabold tracking-wide text-muted-foreground">
+        PAYOUT BREAKDOWN
+      </p>
+      <div className="mx-[22px] rounded-[20px] border-[1.5px] border-border bg-surface p-4">
+        <div className="flex justify-between py-1 text-[13px]">
+          <span className="text-muted-foreground">Job total (customer paid)</span>
+          <span className="font-bold">{formatLKR(totalCharged)}</span>
+        </div>
+        <div className="flex justify-between py-1 text-[13px]">
+          <span className="text-muted-foreground">Sewa service fee</span>
+          <span className="font-bold text-danger">− {formatLKR(sellerCommission)}</span>
+        </div>
+        <div className="my-2.5 h-px bg-border" />
+        <div className="flex items-center justify-between">
+          <span className="text-[15px] font-extrabold">Your payout</span>
+          <span className="text-[17px] font-extrabold text-brand-text">{formatLKR(sellerNet)}</span>
+        </div>
+      </div>
+    </div>
   );
 }

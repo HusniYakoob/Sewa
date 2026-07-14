@@ -16,6 +16,7 @@ type Activity = {
   amount: string;
   positive: boolean;
   at: number;
+  bookingId: string | null;
 };
 
 export default async function EarningsPage() {
@@ -27,10 +28,23 @@ export default async function EarningsPage() {
   const hasBank = Boolean(seller?.bank_account_number);
   const canPayout = hasBank && seller?.nic_verified && available >= MIN_PAYOUT;
 
+  const { data: nextRelease } = await supabase
+    .from("wallet_entries")
+    .select("available_at")
+    .eq("seller_id", sellerId)
+    .eq("status", "pending")
+    .gt("available_at", new Date().toISOString())
+    .order("available_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  const releaseLabel = nextRelease?.available_at
+    ? new Date(nextRelease.available_at).toLocaleDateString("en-LK", { weekday: "short" })
+    : null;
+
   const [{ data: entryRows }, { data: payoutRows }] = await Promise.all([
     supabase
       .from("wallet_entries")
-      .select("id, type, amount, created_at")
+      .select("id, type, amount, created_at, booking_id")
       .eq("seller_id", sellerId)
       .order("created_at", { ascending: false })
       .limit(20),
@@ -51,6 +65,7 @@ export default async function EarningsPage() {
     type: string;
     amount: number;
     created_at: string;
+    booking_id: string | null;
   }[]) {
     const map: Record<string, { icon: string; title: string; pos: boolean }> = {
       earning: { icon: "add_card", title: "Job earning", pos: true },
@@ -68,6 +83,7 @@ export default async function EarningsPage() {
       amount: `${m.pos ? "+" : "−"} ${formatLKR(Math.abs(Number(e.amount)))}`,
       positive: m.pos,
       at: new Date(e.created_at).getTime(),
+      bookingId: e.type === "earning" ? e.booking_id : null,
     });
   }
   for (const p of (payoutRows ?? []) as {
@@ -84,6 +100,7 @@ export default async function EarningsPage() {
       amount: `− ${formatLKR(Number(p.amount))}`,
       positive: false,
       at: new Date(p.requested_at).getTime(),
+      bookingId: null,
     });
   }
   activity.sort((a, b) => b.at - a.at);
@@ -116,7 +133,7 @@ export default async function EarningsPage() {
             <div className="flex items-center gap-1.5 rounded-xl bg-white/15 px-3.5 py-3">
               <Icon name="lock" className="text-[15px] text-[#E4D9FB]" />
               <span className="text-xs font-bold text-[#E4D9FB]">
-                {formatLKR(held)} on hold
+                {formatLKR(held)} on hold{releaseLabel ? ` · ${releaseLabel}` : ""}
               </span>
             </div>
           </div>
@@ -155,25 +172,37 @@ export default async function EarningsPage() {
           </p>
         ) : (
           <div className="mt-1.5 flex flex-col">
-            {activity.map((a) => (
-              <div
-                key={a.key}
-                className="flex items-center gap-3 border-b border-border py-3.5"
-              >
-                <span className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-brand-tint">
-                  <Icon name={a.icon} className="text-[19px] text-brand-text" />
-                </span>
-                <div className="flex-1">
-                  <p className="text-[13.5px] font-extrabold capitalize">{a.title}</p>
-                  <p className="mt-0.5 text-[11.5px] text-muted-foreground">{a.sub}</p>
-                </div>
-                <span
-                  className={`text-sm font-extrabold tabular-nums ${a.positive ? "text-success" : "text-foreground"}`}
+            {activity.map((a) => {
+              const content = (
+                <>
+                  <span className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-brand-tint">
+                    <Icon name={a.icon} className="text-[19px] text-brand-text" />
+                  </span>
+                  <div className="flex-1">
+                    <p className="text-[13.5px] font-extrabold capitalize">{a.title}</p>
+                    <p className="mt-0.5 text-[11.5px] text-muted-foreground">{a.sub}</p>
+                  </div>
+                  <span
+                    className={`text-sm font-extrabold tabular-nums ${a.positive ? "text-success" : "text-foreground"}`}
+                  >
+                    {a.amount}
+                  </span>
+                </>
+              );
+              return a.bookingId ? (
+                <Link
+                  key={a.key}
+                  href={`/booking/${a.bookingId}`}
+                  className="flex items-center gap-3 border-b border-border py-3.5"
                 >
-                  {a.amount}
-                </span>
-              </div>
-            ))}
+                  {content}
+                </Link>
+              ) : (
+                <div key={a.key} className="flex items-center gap-3 border-b border-border py-3.5">
+                  {content}
+                </div>
+              );
+            })}
           </div>
         )}
       </section>
