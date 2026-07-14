@@ -3,8 +3,10 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AppHeader } from "@/components/nav/app-header";
 import { Icon } from "@/components/ui/icon";
+import { getCurrentSellerProfile } from "@/lib/auth";
 import { RevealPin } from "./reveal-pin";
 import { SellerJob } from "./seller-job";
+import { BookingRequestReview } from "./booking-request-review";
 import { ReviewForm } from "./review-form";
 import { CancelForm } from "./cancel-form";
 import { RefundForm } from "./refund-form";
@@ -40,16 +42,17 @@ export default async function BookingPage({
   const { data } = await supabase
     .from("bookings")
     .select(
-      "id, status, total_charged, seller_net, scheduled_at, duration_hours, location, notes, buyer_id, seller_id, service_id, seller_approved_at, service:services(title)",
+      "id, status, total_charged, seller_net, seller_commission, scheduled_at, duration_hours, location, notes, buyer_id, seller_id, service_id, seller_approved_at, package:service_packages(name), service:services(title), buyer:profiles(full_name, created_at)",
     )
     .eq("id", id)
     .maybeSingle();
 
-  const booking = data as {
+  const booking = data as unknown as {
     id: string;
     status: BookingStatus;
     total_charged: number;
     seller_net: number;
+    seller_commission: number;
     scheduled_at: string;
     duration_hours: number;
     location: string | null;
@@ -58,13 +61,47 @@ export default async function BookingPage({
     seller_id: string;
     service_id: string;
     seller_approved_at: string | null;
+    package: { name: string } | null;
     service: { title: string } | null;
+    buyer: { full_name: string; created_at: string } | null;
   } | null;
 
   if (!booking) notFound();
 
   // Seller view: job progression + PIN entry.
   if (booking.buyer_id !== user?.id) {
+    const seller = await getCurrentSellerProfile();
+    let planLabel = "Starter plan · 12.5%";
+    if (seller?.plan_id) {
+      const { data: plan } = await supabase
+        .from("plans")
+        .select("name, commission_rate")
+        .eq("id", seller.plan_id)
+        .maybeSingle();
+      if (plan) {
+        planLabel = `${plan.name} plan · ${(Number(plan.commission_rate) * 100 + 2.5).toFixed(1)}%`;
+      }
+    }
+
+    if (booking.status === "pending" && !booking.seller_approved_at) {
+      return (
+        <BookingRequestReview
+          bookingId={booking.id}
+          buyerName={booking.buyer?.full_name ?? "New customer"}
+          buyerSince={booking.buyer?.created_at ?? null}
+          serviceTitle={booking.service?.title ?? "Service"}
+          packageName={booking.package?.name ?? null}
+          scheduledAt={booking.scheduled_at}
+          durationHours={booking.duration_hours}
+          location={booking.location}
+          totalCharged={Number(booking.total_charged)}
+          sellerCommission={Number(booking.seller_commission)}
+          sellerNet={Number(booking.seller_net)}
+          planLabel={planLabel}
+        />
+      );
+    }
+
     return (
       <div>
         <AppHeader title="Job" backHref="/bookings" />

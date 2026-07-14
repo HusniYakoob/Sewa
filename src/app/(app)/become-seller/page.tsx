@@ -88,6 +88,12 @@ export default function BecomeSellerPage() {
         >
           See plans
         </Link>
+        <p className="mt-3.5 text-center text-[13.5px] text-muted-foreground">
+          Already a pro?{" "}
+          <Link href="/account" className="font-extrabold text-brand-text">
+            Sign in
+          </Link>
+        </p>
       </div>
     </div>
   );
